@@ -25,15 +25,19 @@ jobs:
         with:
           node-version: '24'
 
+      # vendor/ is not in the repository: refill it from the offline pages.
+      # The exercise tests need Skulpt from here, so this comes first.
+      - name: Fetch the libraries out of the offline pages
+        run: python3 tools/build-offline.py extract
+
       - name: Test the flowchart core
         run: node tools/test-flowcharts.js
 
-      # vendor/ is not in the repository: refill it from the offline pages,
-      # then confirm those pages are still exactly what the online ones build.
+      - name: Test the exercises
+        run: node tools/test-exercises.js
+
       - name: Check the offline copies are in sync
-        run: |
-          python3 tools/build-offline.py extract
-          python3 tools/build-offline.py check
+        run: python3 tools/build-offline.py check
 
   deploy:
     needs: check

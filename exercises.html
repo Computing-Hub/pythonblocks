@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exercises for OCR GCSE Computer Science</title>
+<!--
+  Exercises (OCR J277 edition). One self-contained page: no build step, no server.
+  Ten sets of five tasks, easiest first. Work is marked by really running it in
+  the browser with Skulpt and looking at what it prints, so a set can only be
+  finished by writing Python that works. Finishing a set earns a badge picture.
+  Script sections: 1 CORE (marking)  2 CONTENT (the exercises)  3 BADGES  4 INTERFACE  5 START UP.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F7FB; --surface:#FFFFFF; --surface-2:#EAF0F8; --line:#CBD7E6;
+  --ink:#14213D; --ink-2:#44546F; --ink-3:#6B7A93;
+  --run:#FFD23F; --run-ink:#14213D; --focus:#1971C2; --accent:#1971C2;
+  --good:#2B7A0B; --good-bg:#EBFBEE; --bad:#C92A2A; --bad-bg:#FFF5F5;
+  --code-bg:#FFFFFF; --con-bg:#101A30; --con-ink:#DCE7F7; --con-dim:#8FA2C0;
+  --ui:"Atkinson Hyperlegible","Verdana","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code","Consolas","Menlo",monospace;
+}
+:root[data-theme="dark"]{
+  --paper:#0F1729; --surface:#17213A; --surface-2:#1E2B49; --line:#2C3B5E;
+  --ink:#E6ECF8; --ink-2:#B5C2DA; --ink-3:#8797B5;
+  --focus:#74C0FC; --accent:#74C0FC;
+  --good:#A5E08A; --good-bg:#16301A; --bad:#FF9B9B; --bad-bg:#3A1717;
+  --code-bg:#131D34; --con-bg:#0A1122;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+*,svg text{font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0,"clig" 0}
+body{font-family:var(--ui);font-size:15px;line-height:1.5;color:var(--ink);background:var(--paper);min-height:100vh}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
+h1,h2,h3{letter-spacing:-.01em}
+
+/* ---------- top bar ---------- */
+.bar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--ink);color:#fff;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+:root[data-theme="dark"] .bar{background:#0A1122;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand strong{font-size:19px}
+.brand span{font-size:13px;color:#B9C6DC}
+.bar .spacer{flex:1}
+.nb{border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;padding:6px 13px;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none;display:inline-block}
+.nb:hover{background:rgba(255,255,255,.12)}
+
+/* ---------- layout ---------- */
+.app{display:grid;grid-template-columns:300px minmax(0,1fr);gap:24px;max-width:1240px;margin:0 auto;padding:24px 16px 64px;align-items:start}
+@media (max-width:900px){.app{grid-template-columns:1fr;gap:16px}}
+
+/* ---------- the list of sets ---------- */
+.sets h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);margin-bottom:10px}
+.set{display:flex;gap:11px;align-items:flex-start;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:8px}
+.set:hover:not(:disabled){border-color:var(--accent)}
+.set[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.set:disabled{opacity:.5;cursor:not-allowed}
+.set .dot{width:11px;height:11px;border-radius:3px;background:var(--tint);margin-top:5px;flex:none}
+.set .who{flex:1;min-width:0}
+.set .who b{display:block;font-size:15px}
+.set .who small{color:var(--ink-3);font-size:12.5px}
+.set .tally{font-family:var(--mono);font-size:12px;color:var(--ink-3);white-space:nowrap;margin-top:2px}
+.set.done .tally{color:var(--good);font-weight:700}
+
+/* ---------- set overview ---------- */
+.head{margin-bottom:18px}
+.head .eyebrow{font-size:13px;color:var(--ink-3);margin-bottom:3px}
+.head h1{font-size:clamp(22px,3.2vw,29px);margin-bottom:6px}
+.head p{color:var(--ink-2);max-width:70ch}
+.tasks{display:flex;flex-direction:column;gap:9px}
+.task{display:flex;gap:13px;align-items:center;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:13px 15px}
+.task:hover{border-color:var(--accent)}
+.task .num{width:30px;height:30px;border-radius:50%;background:var(--surface-2);color:var(--ink-2);display:grid;place-items:center;font-weight:700;font-size:14px;flex:none}
+.task.done .num{background:var(--good);color:#fff}
+.task .what{flex:1;min-width:0}
+.task .what b{display:block}
+.task .what small{color:var(--ink-3)}
+.task .chev{color:var(--ink-3)}
+.levels{display:flex;gap:3px;flex:none}
+.levels i{width:6px;height:15px;border-radius:2px;background:var(--surface-2);display:block}
+.levels i.on{background:var(--tint)}
+
+/* ---------- one exercise ---------- */
+.back{background:none;border:0;color:var(--accent);padding:4px 0;font-weight:700;margin-bottom:10px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px}
+.panel h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3);margin-bottom:10px}
+.brief{font-size:16px;color:var(--ink-2);margin-bottom:14px;max-width:70ch}
+.steps{list-style:none;counter-reset:s}
+.steps li{counter-increment:s;padding-left:30px;position:relative;margin-bottom:7px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:20px;height:20px;border-radius:50%;background:var(--surface-2);color:var(--ink-2);font-size:12px;font-weight:700;display:grid;place-items:center}
+.eg{margin-top:14px;background:var(--surface-2);border-radius:9px;padding:11px 13px;font-family:var(--mono);font-size:13px;white-space:pre-wrap}
+.eg b{font-family:var(--ui);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);display:block;margin-bottom:5px}
+textarea{width:100%;font-family:var(--mono);font-size:14px;line-height:1.6;color:var(--ink);background:var(--code-bg);border:1px solid var(--line);border-radius:9px;padding:12px;resize:vertical;tab-size:4}
+textarea#code{min-height:230px}
+textarea#given{min-height:64px;font-size:13px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;color:var(--ink-3);margin-bottom:5px}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.act{background:var(--run);color:var(--run-ink);border:1px solid var(--run);border-radius:9px;padding:10px 20px;font-weight:700}
+.act.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.act.ghost:hover{background:var(--surface-2)}
+.act:disabled{opacity:.55;cursor:not-allowed}
+.console{background:var(--con-bg);color:var(--con-ink);border-radius:9px;padding:12px 14px;font-family:var(--mono);font-size:13px;white-space:pre-wrap;word-break:break-word;min-height:60px;max-height:300px;overflow:auto;margin-top:12px}
+.console .dim{color:var(--con-dim)}
+.verdict{border-radius:11px;padding:14px 16px;margin-top:12px;border:1px solid}
+.verdict.ok{background:var(--good-bg);border-color:var(--good);color:var(--good)}
+.verdict.no{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.verdict b{display:block;margin-bottom:3px;font-size:16px}
+.verdict .more{color:var(--ink-2);margin-top:6px}
+:root[data-theme="dark"] .verdict .more{color:var(--ink-2)}
+.tip{background:var(--surface-2);border-radius:9px;padding:12px 14px;margin-top:12px;color:var(--ink-2)}
+.tip code,.brief code,.steps code{font-family:var(--mono);font-size:.92em}
+
+/* ---------- badge ---------- */
+.badge-card{background:var(--surface);border:2px solid var(--tint);border-radius:14px;padding:22px;margin-top:18px;text-align:center}
+.badge-card h3{color:var(--tint);font-size:19px;text-transform:none;letter-spacing:-.01em;margin-bottom:6px}
+.badge-card p{color:var(--ink-2);margin-bottom:14px;max-width:60ch;margin-left:auto;margin-right:auto}
+.badge-card canvas{max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);margin-bottom:14px}
+.code-out{font-family:var(--mono);font-size:17px;font-weight:700;letter-spacing:.08em;background:var(--surface-2);border-radius:8px;padding:9px 14px;display:inline-block;margin-bottom:12px}
+.locked{background:var(--surface-2);border:1px dashed var(--line);border-radius:12px;padding:16px 18px;margin-top:18px;color:var(--ink-3)}
+
+/* ---------- dialogs ---------- */
+.veil{position:fixed;inset:0;background:rgba(10,17,34,.55);display:grid;place-items:center;padding:16px;z-index:50}
+.modal{background:var(--surface);border-radius:14px;padding:24px;max-width:540px;width:100%;max-height:88vh;overflow:auto}
+.modal h2{font-size:20px;margin-bottom:10px}
+.modal p{color:var(--ink-2);margin-bottom:12px}
+.modal label{display:block;font-size:13px;color:var(--ink-3);margin:12px 0 5px}
+.modal input,.modal select{width:100%;font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+.modal .row{margin-top:18px;justify-content:flex-end}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 18px;border-radius:9px;font-weight:700;z-index:60}
+:root[data-theme="dark"] .toast{background:#fff;color:#14213D}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><strong>Exercises</strong><span>OCR GCSE Computer Science J277</span></div>
+  <span class="spacer"></span>
+  <button class="nb" id="btnTeacher" type="button">For teachers</button>
+  <button class="nb" id="btnTheme" type="button">Dark mode</button>
+  <a class="nb" href="index.html">All tools</a>
+</header>
+
+<main class="app">
+  <aside class="sets" id="sets" aria-label="Sets of exercises"></aside>
+  <section class="main" id="main"></section>
+</main>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* =====================================================================
+   1. CORE — marking. Given a student's Python and an exercise, decide
+   whether it does the job and say why not when it doesn't.
+
+   No DOM in here, so tools/test-exercises.js can run every worked
+   solution against its own tests. Sk is passed in rather than read off
+   the window, for the same reason.
+   ===================================================================== */
+function EX_core(Sk) {
+
+  /* ---------------- comparing output ----------------
+     Marking looks at what the program printed, never at the prompts it
+     asked with, so a student's wording is their own. Lines are compared
+     with the spacing collapsed and capitals ignored: "Total: 15" and
+     "total:  15" both count. A want is either a piece of text that must
+     appear, or { re: 'pattern', as: 'what to say it needed' }.
+  */
+  function lines(text) {
+    return String(text).split('\n').map(function (l) { return l.replace(/\s+/g, ' ').trim(); })
+      .filter(function (l) { return l.length > 0; });
+  }
+  function hit(line, want) {
+    if (typeof want === 'string') return line.toLowerCase().indexOf(want.toLowerCase()) >= 0;
+    return new RegExp(want.re, 'i').test(line);
+  }
+  function describe(want) {
+    if (typeof want === 'string') return '"' + want + '"';
+    return want.as || 'something matching ' + want.re;
+  }
+  /** The first want that is missing, or null when they all appear in order. */
+  function missing(out, wants) {
+    var got = lines(out), at = 0, i, j, found;
+    for (i = 0; i < wants.length; i++) {
+      found = -1;
+      for (j = at; j < got.length; j++) if (hit(got[j], wants[i])) { found = j; break; }
+      if (found < 0) return wants[i];
+      at = found + 1;
+    }
+    return null;
+  }
+
+  /* ---------------- looking at the code itself ----------------
+     Some tasks are about how it is written, not only what it prints:
+     "use a loop", "write a function called area". Strings and comments
+     are blanked out first, so the word "for" inside a message is not
+     mistaken for a loop.
+  */
+  function bare(code) {
+    return String(code)
+      .replace(/("""|''')[\s\S]*?\1/g, '""')
+      .replace(/"(?:\\.|[^"\\])*"/g, '""')
+      .replace(/'(?:\\.|[^'\\])*'/g, "''")
+      .replace(/#[^\n]*/g, '');
+  }
+  function sourceProblem(code, ex) {
+    // A rule marked raw is matched against the code as typed, for the
+    // times when the thing being asked for IS a string, such as open(f, "w").
+    var src = bare(code), i, rule;
+    function look(rule) { return new RegExp(rule.re).test(rule.raw ? String(code) : src); }
+    for (i = 0; ex.must && i < ex.must.length; i++) {
+      rule = ex.must[i];
+      if (!look(rule)) return rule.why;
+    }
+    for (i = 0; ex.forbid && i < ex.forbid.length; i++) {
+      rule = ex.forbid[i];
+      if (look(rule)) return rule.why;
+    }
+    return null;
+  }
+
+  /* ---------------- virtual files ----------------
+     The file handling set needs open(), readline() and write() without
+     touching the real computer. This is the same Python module the
+     Python Blocks page hands to the interpreter.
+  */
+  function VFS(files) {
+    return '_files = ' + JSON.stringify(files) + '\n' + [
+      'class TextFile:',
+      '    def __init__(self, name, mode):',
+      '        self.name = name',
+      '        self.mode = mode',
+      '        self.closed = False',
+      '        self._pos = 0',
+      '        if mode == "r":',
+      '            if name not in _files:',
+      '                raise IOError("there is no file called \'" + name + "\'. Check the spelling, or write to it first")',
+      '        elif mode == "w":',
+      '            _files[name] = ""',
+      '        elif mode == "a":',
+      '            if name not in _files:',
+      '                _files[name] = ""',
+      '        else:',
+      '            raise ValueError("the mode must be \\"r\\", \\"w\\" or \\"a\\"")',
+      '    def _check(self, need):',
+      '        if self.closed:',
+      '            raise ValueError("this file has already been closed")',
+      '        if need == "r" and self.mode != "r":',
+      '            raise IOError("this file was opened for writing, so it cannot be read. Close it and open it again with \\"r\\"")',
+      '        if need == "w" and self.mode == "r":',
+      '            raise IOError("this file was opened with \\"r\\", so it cannot be written to. Open it with \\"w\\" or \\"a\\"")',
+      '    def read(self):',
+      '        self._check("r")',
+      '        data = _files[self.name][self._pos:]',
+      '        self._pos = len(_files[self.name])',
+      '        return data',
+      '    def readline(self):',
+      '        self._check("r")',
+      '        data = _files[self.name]',
+      '        if self._pos >= len(data):',
+      '            return ""',
+      '        end = data.find("\\n", self._pos)',
+      '        if end == -1:',
+      '            end = len(data)',
+      '        else:',
+      '            end = end + 1',
+      '        line = data[self._pos:end]',
+      '        self._pos = end',
+      '        return line',
+      '    def readlines(self):',
+      '        lines = []',
+      '        line = self.readline()',
+      '        while line != "":',
+      '            lines.append(line)',
+      '            line = self.readline()',
+      '        return lines',
+      '    def write(self, text):',
+      '        self._check("w")',
+      '        if not isinstance(text, str):',
+      '            raise TypeError("write() needs a string. Use str() to convert a number first")',
+      '        _files[self.name] = _files[self.name] + text',
+      '    def close(self):',
+      '        self.closed = True',
+      '    def __iter__(self):',
+      '        return iter(self.readlines())',
+      'def open(name, mode="r"):',
+      '    return TextFile(name, mode)',
+      ''
+    ].join('\n');
+  }
+
+  /* ---------------- turning a crash into something useful ---------------- */
+  var HINTS = [
+    [/^NameError/, /'(random|time|math)'/, 'Add an import line at the top, for example  import random'],
+    [/^NameError/, null, 'Python does not know that name yet. Check the spelling and the capital letters, and make sure it is given a value above the line that uses it.'],
+    [/^TypeError/, /operand|concatenate|must be str|can only/i, 'Text and numbers are being mixed. Use str() around a number to join it to text, or int() to do maths with something that was typed in.'],
+    [/^TypeError/, /argument|positional|takes/i, 'The brackets of the call and the brackets of the def must hold the same number of values.'],
+    [/^ValueError/, /invalid literal|could not convert/i, 'int() only works on text that looks like a whole number.'],
+    [/^ZeroDivisionError/, null, 'Dividing by zero is impossible. Check the value before you divide by it.'],
+    [/^IndexError/, null, 'That position is past the end. Positions start at 0, so the last one is len - 1.'],
+    [/^(SyntaxError|IndentationError|ParseError)/, null, 'Python cannot read this line. Check the colons, the brackets and the indenting.']
+  ];
+  function explain(err) {
+    var name = err && err.tp$name || 'Error', message = String(err && err.message || err), line = null, i, tb;
+    if (err && err.tp$name) {
+      try { message = err.args && err.args.v && err.args.v.length ? String(Sk.ffi.remapToJs(err.args.v[0])) : ''; } catch (e) { message = String(err); }
+      tb = err.traceback || [];
+      for (i = 0; i < tb.length; i++) if (/<stdin>/.test(tb[i].filename)) { line = tb[i].lineno; break; }
+    }
+    var hint = null;
+    for (i = 0; i < HINTS.length && !hint; i++) if (HINTS[i][0].test(name) && (!HINTS[i][1] || HINTS[i][1].test(message))) hint = HINTS[i][2];
+    return { name: name, message: message, line: line, hint: hint };
+  }
+
+  /* ---------------- running one test ----------------
+     Returns { ok, why, output, error }. Never rejects: a program that
+     crashes is a result, not an accident.
+  */
+  var TIME = 5000, FLOOD = 20000;
+  function runTest(code, test) {
+    var out = '', queue = (test['in'] || []).slice(), ranOut = false, flooded = false;
+    var files = JSON.parse(JSON.stringify(test.files || {}));
+    return new Promise(function (resolve) {
+      Sk.configure({
+        output: function (t) { out += t; if (out.length > FLOOD) { flooded = true; Sk.execLimit = 1; } },
+        read: function (path) {
+          if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[path] === undefined) throw "File not found: '" + path + "'";
+          return Sk.builtinFiles.files[path];
+        },
+        inputfun: function () {
+          if (!queue.length) { ranOut = true; Sk.execLimit = 1; return ''; }
+          Sk.execStart = Date.now();
+          return queue.shift();
+        },
+        inputfunTakesPrompt: true, __future__: Sk.python3, yieldLimit: 100, killableWhile: true, killableFor: true
+      });
+      Sk.execLimit = TIME; Sk.execStart = Date.now();
+      Sk.builtinFiles.files['src/lib/exfiles.py'] = VFS(files);
+      Sk.sysmodules = new Sk.builtin.dict([]);
+      var fsModule = Sk.importModule('exfiles', false, false);
+      Sk.builtins.open = fsModule.$d.open;
+
+      Sk.misceval.asyncToPromise(function () { return Sk.importMainWithBody('<stdin>', false, code, true); })
+        .then(function () { resolve(judge(null)); }, function (err) { resolve(judge(err)); });
+
+      function judge(err) {
+        var after = {};
+        try { after = Sk.ffi.remapToJs(fsModule.$d._files); } catch (e) { after = files; }
+
+        if (ranOut) return fail('Your program asked for more input than this task gives it. It was typed ' +
+          (test['in'] || []).length + ' thing' + ((test['in'] || []).length === 1 ? '' : 's') + '. Does a loop keep going when it should stop?');
+        if (flooded) return fail('Your program printed far more than the task asks for. Does the loop ever end?');
+        if (err) {
+          var e = explain(err);
+          if (/TimeLimit/.test(e.name)) return fail('Your program was still running after ' + (TIME / 1000) + ' seconds. Is there a loop that never finishes?');
+          return fail(e.name + (e.line ? ' on line ' + e.line : '') + ': ' + e.message, e.hint);
+        }
+
+        var want = missing(out, test.want || []);
+        if (want) return fail('The output does not have ' + describe(want) + ' in it' +
+          ((test.want || []).length > 1 ? ', in that order.' : '.'));
+
+        var name;
+        for (name in (test.wantFiles || {})) {
+          var got = (after[name] || '').replace(/\s+$/, ''), expect = test.wantFiles[name].replace(/\s+$/, '');
+          if (got !== expect) {
+            return fail(after[name] === undefined
+              ? 'No file called ' + name + ' was made.'
+              : name + ' does not hold what the task asks for. It holds: ' + JSON.stringify(after[name]));
+          }
+        }
+        return { ok: true, output: out, files: after };
+      }
+      function fail(why, hint) { return { ok: false, why: why, hint: hint || null, output: out }; }
+    });
+  }
+
+  /** Mark a whole exercise. Stops at the first test that does not pass. */
+  function check(code, ex) {
+    if (!String(code).trim()) return Promise.resolve({ ok: false, why: 'There is no code to check yet.' });
+    var problem = sourceProblem(code, ex);
+    if (problem) return Promise.resolve({ ok: false, why: problem });
+
+    var tests = ex.tests, i = 0;
+    function next() {
+      if (i >= tests.length) return Promise.resolve({ ok: true });
+      var test = tests[i++];
+      var runs = test.runs || 1, done = 0;
+      function again() {
+        return runTest(code, test).then(function (r) {
+          if (!r.ok) {
+            r.test = test;
+            r.number = i;
+            r.total = tests.length;
+            return r;
+          }
+          done++;
+          return done < runs ? again() : next();
+        });
+      }
+      return again();
+    }
+    return next();
+  }
+
+  return { check: check, runTest: runTest, lines: lines, missing: missing, describe: describe, bare: bare, sourceProblem: sourceProblem, VFS: VFS, explain: explain };
+}
+
+/* =====================================================================
+   2. CONTENT — ten sets of five, easiest first.
+
+   Each exercise carries its own tests and one worked solution, and
+   tools/test-exercises.js runs every solution against every test, so a
+   task that cannot be passed never reaches a student.
+
+   ex = { id, title, brief, steps: [], example, hint, starter,
+          must / forbid: [{ re, why }],     rules about the code itself
+          tests: [{ in: [typed lines], want: [text or { re, as }],
+                    files, wantFiles, runs }],
+          solution }
+   ===================================================================== */
+function EX_content() {
+  var SETS = [
+
+  /* ------------------------------------------------------------------ 1 */
+  { id: 'vars', code: 'VAR', name: 'Variables', sub: 'storing and showing values', colour: '#1971C2',
+    about: 'A variable is a named place in memory. Give it a value with =, and use its name whenever you want the value back.',
+    items: [
+    { id: 'vars1', title: 'Hello world',
+      brief: 'Every programmer starts here. Make the computer say hello.',
+      steps: ['Print the words  Hello world'],
+      hint: 'print() shows something on the screen. Text goes inside the brackets, in quotes.',
+      tests: [{ want: ['Hello world'] }],
+      solution: 'print("Hello world")\n' },
+
+    { id: 'vars2', title: 'A name of your own',
+      brief: 'Store a name in a variable, then show it.',
+      steps: ['Make a variable called  name  and put  Ada  in it', 'Print the variable (not the text)'],
+      hint: 'name = "Ada"  makes the variable. Then  print(name)  shows what is inside it.',
+      must: [{ re: 'name\\s*=', why: 'Store the name in a variable called name first, with  name = "Ada"' },
+             { re: 'print\\s*\\(\\s*name\\s*\\)', why: 'Print the variable itself:  print(name)  with no quotes around name.' }],
+      tests: [{ want: ['Ada'] }],
+      solution: 'name = "Ada"\nprint(name)\n' },
+
+    { id: 'vars3', title: 'Two pieces of information',
+      brief: 'Hold a name and an age at the same time, and put them in one sentence.',
+      steps: ['Store  Ada  in a variable called  name', 'Store  15  in a variable called  age', 'Print one line that reads:  Ada is 15'],
+      example: 'Ada is 15',
+      hint: 'print() can take several things separated by commas, and puts a space between them:  print(name, "is", age)',
+      tests: [{ want: ['Ada is 15'] }],
+      solution: 'name = "Ada"\nage = 15\nprint(name, "is", age)\n' },
+
+    { id: 'vars4', title: 'Keeping score',
+      brief: 'A variable can be changed while the program runs. That is what makes it a variable.',
+      steps: ['Start a variable  score  at  10', 'Add  5  to it', 'Print the new score'],
+      hint: 'score = score + 5  means "work out score + 5, then store the answer back in score".',
+      must: [{ re: 'score\\s*=\\s*score\\s*\\+|score\\s*\\+=', why: 'Change the variable rather than printing 15 directly: use  score = score + 5' }],
+      tests: [{ want: [{ re: '\\b15\\b', as: 'the new score, 15' }] }],
+      solution: 'score = 10\nscore = score + 5\nprint(score)\n' },
+
+    { id: 'vars5', title: 'The swap',
+      brief: 'A classic. Two variables have to trade values, and you may not simply retype the numbers.',
+      steps: ['Start with  a = 3  and  b = 8', 'Swap what they hold, so a holds 8 and b holds 3', 'Print a, then print b'],
+      example: '8\n3',
+      hint: 'If you write  a = b  first, the 3 is gone for good. Park one of them in a third variable, say  temp, before you overwrite it.',
+      tests: [{ want: [{ re: '\\b8\\b', as: 'the value of a after the swap, 8' }, { re: '\\b3\\b', as: 'the value of b after the swap, 3' }] }],
+      solution: 'a = 3\nb = 8\ntemp = a\na = b\nb = temp\nprint(a)\nprint(b)\n' }
+  ]},
+
+  /* ------------------------------------------------------------------ 2 */
+  { id: 'input', code: 'INP', name: 'Input and casting', sub: 'getting data from the user', colour: '#C2255C',
+    about: 'input() always hands back a string, even when the user types a number. int() and float() convert it so you can do maths.',
+    items: [
+    { id: 'inp1', title: 'Who are you?',
+      brief: 'Ask the user for their name and greet them by it.',
+      steps: ['Ask for a name with input()', 'Print  Hello  followed by the name'],
+      example: 'Hello Sam',
+      hint: 'name = input("What is your name? ")  then  print("Hello", name)',
+      must: [{ re: 'input\\s*\\(', why: 'Use input() to ask the user, rather than writing the name into the program.' }],
+      tests: [{ 'in': ['Sam'], want: ['Hello Sam'] }, { 'in': ['Ada'], want: ['Hello Ada'] }],
+      solution: 'name = input("What is your name? ")\nprint("Hello", name)\n' },
+
+    { id: 'inp2', title: 'Next birthday',
+      brief: 'Ask how old someone is and work out their age next year. This needs a cast.',
+      steps: ['Ask for an age', 'Turn it into a whole number with int()', 'Print the age plus one'],
+      hint: 'Without int(), "15" + 1 is a type error: you cannot add a number to text.',
+      must: [{ re: 'int\\s*\\(', why: 'input() gives text. Wrap it in int() so you can add 1 to it.' }],
+      tests: [{ 'in': ['15'], want: [{ re: '\\b16\\b', as: 'the age next year, 16' }] },
+              { 'in': ['7'], want: [{ re: '\\b8\\b', as: 'the age next year, 8' }] }],
+      solution: 'age = int(input("How old are you? "))\nprint("Next year you will be", age + 1)\n' },
+
+    { id: 'inp3', title: 'Add them up',
+      brief: 'Two numbers in, one answer out.',
+      steps: ['Ask for two whole numbers', 'Print their total'],
+      hint: 'Two separate input() lines, each wrapped in int().',
+      tests: [{ 'in': ['3', '4'], want: [{ re: '\\b7\\b', as: 'the total, 7' }] },
+              { 'in': ['20', '22'], want: [{ re: '\\b42\\b', as: 'the total, 42' }] }],
+      solution: 'first = int(input("First number: "))\nsecond = int(input("Second number: "))\nprint("Total:", first + second)\n' },
+
+    { id: 'inp4', title: 'Three of them',
+      brief: 'Prices have decimal parts, so int() is the wrong tool here.',
+      steps: ['Ask for the price of one item', 'Print what three of them cost'],
+      hint: 'float() converts text into a real number, so 2.5 stays 2.5 instead of becoming 2.',
+      must: [{ re: 'float\\s*\\(', why: 'A price can have a decimal part, so cast with float() rather than int().' }],
+      tests: [{ 'in': ['2.5'], want: [{ re: '7\\.5', as: 'the cost of three, 7.5' }] },
+              { 'in': ['1.2'], want: [{ re: '3\\.6', as: 'the cost of three, 3.6' }] }],
+      solution: 'price = float(input("Price of one item: "))\nprint("Three cost", price * 3)\n' },
+
+    { id: 'inp5', title: 'A small profile',
+      brief: 'Two inputs, two data types, one tidy sentence. Exam questions love this shape.',
+      steps: ['Ask for a name', 'Ask for an age', 'Print one line like:  Sam will be 16 next year'],
+      example: 'Sam will be 16 next year',
+      hint: 'The name stays as text, the age needs int(). print() with commas saves you casting the number back to a string.',
+      tests: [{ 'in': ['Sam', '15'], want: ['Sam will be 16'] },
+              { 'in': ['Ada', '35'], want: ['Ada will be 36'] }],
+      solution: 'name = input("Name: ")\nage = int(input("Age: "))\nprint(name, "will be", age + 1, "next year")\n' }
+  ]},
+
+  /* ------------------------------------------------------------------ 3 */
+  { id: 'ops', code: 'OPS', name: 'Operators', sub: 'arithmetic, DIV and MOD', colour: '#A16207',
+    about: 'Alongside + - * / Python has // for whole-number division (DIV) and % for the remainder (MOD). Examiners ask for both by name.',
+    items: [
+    { id: 'ops1', title: 'Area of a rectangle',
+      brief: 'Input, process, output: the shape of almost every program.',
+      steps: ['Ask for a width and a height', 'Print the area'],
+      hint: 'Area is width * height.',
+      tests: [{ 'in': ['5', '3'], want: [{ re: '\\b15\\b', as: 'the area, 15' }] },
+              { 'in': ['7', '6'], want: [{ re: '\\b42\\b', as: 'the area, 42' }] }],
+      solution: 'width = int(input("Width: "))\nheight = int(input("Height: "))\nprint("Area:", width * height)\n' },
+
+    { id: 'ops2', title: 'Minutes and seconds',
+      brief: 'Turn a number of seconds into whole minutes and the seconds left over. This is what DIV and MOD are for.',
+      steps: ['Ask for a number of seconds', 'Print the whole minutes', 'Print the seconds left over'],
+      example: '2\n15',
+      hint: '135 // 60 is 2 whole minutes. 135 % 60 is the 15 seconds that will not fill another minute.',
+      must: [{ re: '//', why: 'Use // (DIV) to get the whole minutes.' }, { re: '%', why: 'Use % (MOD) to get the seconds left over.' }],
+      tests: [{ 'in': ['135'], want: [{ re: '\\b2\\b', as: 'the minutes, 2' }, { re: '\\b15\\b', as: 'the seconds, 15' }] },
+              { 'in': ['60'], want: [{ re: '\\b1\\b', as: 'the minutes, 1' }, { re: '\\b0\\b', as: 'the seconds, 0' }] }],
+      solution: 'total = int(input("Seconds: "))\nprint(total // 60)\nprint(total % 60)\n' },
+
+    { id: 'ops3', title: 'Mean of three',
+      brief: 'An average with a long decimal is no use to anyone. Round it.',
+      steps: ['Ask for three numbers', 'Work out the mean', 'Print it rounded to 1 decimal place'],
+      hint: 'round(value, 1) rounds to one decimal place. Divide by 3 with / so the decimal part survives.',
+      must: [{ re: 'round\\s*\\(', why: 'Use round(mean, 1) to cut the answer down to one decimal place.' }],
+      tests: [{ 'in': ['3', '4', '6'], want: [{ re: '4\\.3', as: 'the mean rounded to 1 dp, 4.3' }] },
+              { 'in': ['1', '2', '2'], want: [{ re: '1\\.7', as: 'the mean rounded to 1 dp, 1.7' }] }],
+      solution: 'a = int(input("First: "))\nb = int(input("Second: "))\nc = int(input("Third: "))\nmean = (a + b + c) / 3\nprint("Mean:", round(mean, 1))\n' },
+
+    { id: 'ops4', title: 'Percentage',
+      brief: 'A mark out of something, shown as a percentage.',
+      steps: ['Ask for a score and the total it was out of', 'Print the score as a percentage'],
+      hint: 'score / total * 100. Watch the order: divide first, then multiply.',
+      tests: [{ 'in': ['17', '20'], want: [{ re: '\\b85\\b', as: 'the percentage, 85' }] },
+              { 'in': ['30', '40'], want: [{ re: '\\b75\\b', as: 'the percentage, 75' }] }],
+      solution: 'score = int(input("Score: "))\ntotal = int(input("Out of: "))\nprint("Percentage:", score / total * 100)\n' },
+
+    { id: 'ops5', title: 'Pounds and pence',
+      brief: 'A till holds everything in pence. Split it into pounds and the pence left over.',
+      steps: ['Ask for an amount in pence', 'Print the whole pounds', 'Print the pence left over'],
+      example: '12\n34',
+      hint: 'There are 100 pence in a pound, so this is the minutes-and-seconds problem wearing a different hat.',
+      must: [{ re: '//', why: 'Use // (DIV) for the whole pounds.' }, { re: '%', why: 'Use % (MOD) for the pence left over.' }],
+      tests: [{ 'in': ['1234'], want: [{ re: '\\b12\\b', as: 'the pounds, 12' }, { re: '\\b34\\b', as: 'the pence, 34' }] },
+              { 'in': ['905'], want: [{ re: '\\b9\\b', as: 'the pounds, 9' }, { re: '\\b5\\b', as: 'the pence, 5' }] }],
+      solution: 'pence = int(input("Amount in pence: "))\nprint(pence // 100)\nprint(pence % 100)\n' }
+  ]},
+
+  /* ------------------------------------------------------------------ 4 */
+  { id: 'select', code: 'SEL', name: 'Selection', sub: 'if, elif and else', colour: '#C2410C',
+    about: 'Selection chooses which instructions run. Python tests each condition in turn and takes the first branch that is True.',
+    items: [
+    { id: 'sel1', title: 'Pass or fail',
+      brief: 'One decision, two outcomes. The pass mark counts as a pass.',
+      steps: ['Ask for a mark', 'Print  Pass  when the mark is 40 or more', 'Print  Fail  when it is not'],
+      hint: '>= means "greater than or equal to", which is what makes 40 itself a pass.',
+      must: [{ re: '\\bif\\b', why: 'This one needs an if statement.' }],
+      tests: [{ 'in': ['55'], want: ['Pass'] }, { 'in': ['12'], want: ['Fail'] }, { 'in': ['40'], want: ['Pass'] }],
+      solution: 'mark = int(input("Mark: "))\nif mark >= 40:\n    print("Pass")\nelse:\n    print("Fail")\n' },
+
+    { id: 'sel2', title: 'Even or odd',
+      brief: 'MOD again, this time inside a condition.',
+      steps: ['Ask for a whole number', 'Print  Even  or  Odd'],
+      hint: 'A number is even when the remainder after dividing by 2 is nothing at all: number % 2 == 0',
+      must: [{ re: '%', why: 'Use % (MOD) to find the remainder when the number is divided by 2.' }],
+      tests: [{ 'in': ['7'], want: ['Odd'] }, { 'in': ['10'], want: ['Even'] }, { 'in': ['0'], want: ['Even'] }],
+      solution: 'number = int(input("Whole number: "))\nif number % 2 == 0:\n    print("Even")\nelse:\n    print("Odd")\n' },
+
+    { id: 'sel3', title: 'Grade boundaries',
+      brief: 'Four outcomes now, so one if and one else will not stretch far enough.',
+      steps: ['Ask for a mark out of 100', 'Print  Distinction  for 80 and over', 'Print  Merit  for 60 to 79', 'Print  Pass  for 40 to 59', 'Print  Ungraded  below 40'],
+      hint: 'Put the highest boundary first. Once a branch is taken, the rest are skipped, so you only need to test one end of each band.',
+      must: [{ re: '\\belif\\b', why: 'Four outcomes need elif between the if and the else.' }],
+      tests: [{ 'in': ['85'], want: ['Distinction'] }, { 'in': ['65'], want: ['Merit'] },
+              { 'in': ['45'], want: ['Pass'] }, { 'in': ['20'], want: ['Ungraded'] }, { 'in': ['80'], want: ['Distinction'] }],
+      solution: 'mark = int(input("Mark out of 100: "))\nif mark >= 80:\n    print("Distinction")\nelif mark >= 60:\n    print("Merit")\nelif mark >= 40:\n    print("Pass")\nelse:\n    print("Ungraded")\n' },
+
+    { id: 'sel4', title: 'Two things at once',
+      brief: 'A login only works when both halves are right.',
+      steps: ['Ask for a username and a password', 'When the username is  admin  and the password is  letmein, print  Welcome', 'Otherwise print  Access denied'],
+      hint: 'and joins two conditions. Both have to be True for the whole thing to be True.',
+      must: [{ re: '\\band\\b', why: 'Join the two conditions with and, rather than nesting two ifs.' }],
+      tests: [{ 'in': ['admin', 'letmein'], want: ['Welcome'] },
+              { 'in': ['admin', 'wrong'], want: ['Access denied'] },
+              { 'in': ['guest', 'letmein'], want: ['Access denied'] }],
+      solution: 'user = input("Username: ")\npassword = input("Password: ")\nif user == "admin" and password == "letmein":\n    print("Welcome")\nelse:\n    print("Access denied")\n' },
+
+    { id: 'sel5', title: 'Biggest of three',
+      brief: 'No loops, no built-in max(): just conditions. Think carefully about the order.',
+      steps: ['Ask for three numbers', 'Print the biggest of them'],
+      hint: 'Either compare the first against both others, or keep a "biggest so far" variable and update it twice.',
+      forbid: [{ re: '\\bmax\\s*\\(', why: 'max() would do the thinking for you. Work it out with conditions instead.' }],
+      tests: [{ 'in': ['4', '9', '2'], want: [{ re: '\\b9\\b', as: 'the biggest, 9' }] },
+              { 'in': ['9', '4', '2'], want: [{ re: '\\b9\\b', as: 'the biggest, 9' }] },
+              { 'in': ['2', '4', '9'], want: [{ re: '\\b9\\b', as: 'the biggest, 9' }] }],
+      solution: 'a = int(input("First: "))\nb = int(input("Second: "))\nc = int(input("Third: "))\nbiggest = a\nif b > biggest:\n    biggest = b\nif c > biggest:\n    biggest = c\nprint("Biggest:", biggest)\n' }
+  ]},
+
+  /* ------------------------------------------------------------------ 5 */
+  { id: 'forloop', code: 'FOR', name: 'Count-controlled loops', sub: 'for and range', colour: '#4C51BF',
+    about: 'Use a for loop when you know how many times to go round. range(5) counts 0, 1, 2, 3, 4: it stops before the number you give it.',
+    items: [
+    { id: 'for1', title: 'One to five',
+      brief: 'Five lines of output from two lines of code.',
+      steps: ['Print the numbers 1 to 5, each on its own line'],
+      hint: 'range(1, 6) counts 1, 2, 3, 4, 5. It stops before the 6.',
+      must: [{ re: '\\bfor\\b', why: 'Use a for loop rather than five print lines.' }],
+      tests: [{ want: [{ re: '^1$', as: '1 on a line' }, { re: '^2$', as: '2 on a line' }, { re: '^3$', as: '3 on a line' },
+                       { re: '^4$', as: '4 on a line' }, { re: '^5$', as: '5 on a line' }] }],
+      solution: 'for i in range(1, 6):\n    print(i)\n' },
+
+    { id: 'for2', title: 'Times table',
+      brief: 'Print a whole times table, laid out properly.',
+      steps: ['Ask which times table', 'Print the twelve lines, each like:  3 x 4 = 12'],
+      example: '3 x 1 = 3\n3 x 2 = 6\n...\n3 x 12 = 36',
+      hint: 'The loop counter is the number you are multiplying by, so it needs to run from 1 to 12.',
+      must: [{ re: '\\bfor\\b', why: 'A times table is count-controlled: use a for loop.' }],
+      tests: [{ 'in': ['3'], want: ['3 x 1 = 3', '3 x 2 = 6', '3 x 12 = 36'] },
+              { 'in': ['7'], want: ['7 x 1 = 7', '7 x 12 = 84'] }],
+      solution: 'table = int(input("Which times table? "))\nfor i in range(1, 13):\n    print(table, "x", i, "=", table * i)\n' },
+
+    { id: 'for3', title: 'Countdown',
+      brief: 'Counting down needs a third number in range().',
+      steps: ['Print 5, 4, 3, 2, 1, each on its own line', 'Then print  Lift off!'],
+      hint: 'range(5, 0, -1) starts at 5, steps by -1 and stops before 0.',
+      must: [{ re: '\\bfor\\b', why: 'Use a for loop with a negative step.' }],
+      tests: [{ want: [{ re: '^5$', as: '5' }, { re: '^4$', as: '4' }, { re: '^3$', as: '3' }, { re: '^2$', as: '2' },
+                       { re: '^1$', as: '1' }, 'Lift off'] }],
+      solution: 'for i in range(5, 0, -1):\n    print(i)\nprint("Lift off!")\n' },
+
+    { id: 'for4', title: 'Running total',
+      brief: 'Five numbers go in, one total comes out. The variable that survives the loop is the important one.',
+      steps: ['Ask for five numbers, one at a time', 'Print their total'],
+      hint: 'Set total = 0 before the loop starts. Inside it, total = total + number.',
+      must: [{ re: '\\bfor\\b', why: 'You know it is five numbers, so use a for loop.' }],
+      tests: [{ 'in': ['1', '2', '3', '4', '5'], want: [{ re: '\\b15\\b', as: 'the total, 15' }] },
+              { 'in': ['10', '10', '10', '10', '10'], want: [{ re: '\\b50\\b', as: 'the total, 50' }] }],
+      solution: 'total = 0\nfor count in range(5):\n    number = int(input("Enter a number: "))\n    total = total + number\nprint("Total:", total)\n' },
+
+    { id: 'for5', title: 'Highest of five',
+      brief: 'A decision inside a loop. Worth tracing on paper before you write it.',
+      steps: ['Ask for five numbers', 'Print the highest one'],
+      hint: 'Keep a "highest so far" variable. Each time round, if this number beats it, it becomes the new highest. Starting at 0 is a trap if the numbers could be negative: start at the first number instead.',
+      must: [{ re: '\\bfor\\b', why: 'Use a for loop: you know there are five numbers.' }],
+      tests: [{ 'in': ['3', '9', '2', '7', '1'], want: [{ re: '\\b9\\b', as: 'the highest, 9' }] },
+              { 'in': ['1', '2', '3', '4', '5'], want: [{ re: '\\b5\\b', as: 'the highest, 5' }] },
+              { 'in': ['8', '2', '3', '4', '5'], want: [{ re: '\\b8\\b', as: 'the highest, 8' }] }],
+      solution: 'highest = int(input("Enter a number: "))\nfor count in range(4):\n    number = int(input("Enter a number: "))\n    if number > highest:\n        highest = number\nprint("Highest:", highest)\n' }
+  ]},
+
+  /* ------------------------------------------------------------------ 6 */
+  { id: 'whileloop', code: 'WHI', name: 'Condition-controlled loops', sub: 'while', colour: '#0E7490',
+    about: 'Use a while loop when you do not know how many times it will go round. Something inside the loop must change, or it will never stop.',
+    items: [
+    { id: 'whi1', title: 'The password gate',
+      brief: 'Keep asking until they get it right.',
+      steps: ['Ask for a password', 'Keep asking while it is not  letmein', 'Print  Access granted  once it is'],
+      hint: 'Ask once before the loop, then ask again at the bottom of the loop. != means "is not equal to".',
+      must: [{ re: '\\bwhile\\b', why: 'You cannot know how many guesses it will take, so use a while loop.' }],
+      tests: [{ 'in': ['abc', 'letmein'], want: ['Access granted'] },
+              { 'in': ['letmein'], want: ['Access granted'] },
+              { 'in': ['one', 'two', 'letmein'], want: ['Access granted'] }],
+      solution: 'password = input("Password: ")\nwhile password != "letmein":\n    print("Wrong password")\n    password = input("Password: ")\nprint("Access granted")\n' },
+
+    { id: 'whi2', title: 'Add until zero',
+      brief: 'A total that stops on a special value. That value is called a sentinel.',
+      steps: ['Ask for numbers one at a time', 'Stop when the user types  0', 'Print the total of everything before the 0'],
+      hint: 'The 0 itself should not be added. Ask first, then loop while the number is not 0.',
+      must: [{ re: '\\bwhile\\b', why: 'The user decides when to stop, so this is a while loop.' }],
+      tests: [{ 'in': ['5', '6', '0'], want: [{ re: '\\b11\\b', as: 'the total, 11' }] },
+              { 'in': ['0'], want: [{ re: '\\b0\\b', as: 'a total of 0' }] }],
+      solution: 'total = 0\nnumber = int(input("Number (0 to stop): "))\nwhile number != 0:\n    total = total + number\n    number = int(input("Number (0 to stop): "))\nprint("Total:", total)\n' },
+
+    { id: 'whi3', title: 'Only sensible answers',
+      brief: 'Validation: refuse anything outside 1 to 10 and ask again.',
+      steps: ['Ask for a number between 1 and 10', 'Keep asking until the answer really is between 1 and 10', 'Print the accepted number'],
+      hint: 'The loop condition is "it is wrong": number < 1 or number > 10.',
+      must: [{ re: '\\bwhile\\b', why: 'Validation needs a while loop: you cannot tell how many wrong answers are coming.' }],
+      tests: [{ 'in': ['20', '0', '7'], want: [{ re: '\\b7\\b', as: 'the accepted number, 7' }] },
+              { 'in': ['5'], want: [{ re: '\\b5\\b', as: 'the accepted number, 5' }] }],
+      solution: 'number = int(input("A number between 1 and 10: "))\nwhile number < 1 or number > 10:\n    print("That is not between 1 and 10")\n    number = int(input("A number between 1 and 10: "))\nprint("Thank you:", number)\n' },
+
+    { id: 'whi4', title: 'Halving',
+      brief: 'How many times can a number be halved before it reaches 1?',
+      steps: ['Ask for a whole number', 'Halve it with // over and over until it reaches 1', 'Print how many halvings it took'],
+      example: '16 takes 4 halvings: 8, 4, 2, 1',
+      hint: 'Count with a variable that goes up by 1 each time round. If the number starts at 1, the answer is 0.',
+      must: [{ re: '\\bwhile\\b', why: 'You do not know how many halvings it will take, so use a while loop.' }],
+      tests: [{ 'in': ['16'], want: [{ re: '\\b4\\b', as: 'the count, 4' }] },
+              { 'in': ['1'], want: [{ re: '\\b0\\b', as: 'the count, 0' }] },
+              { 'in': ['8'], want: [{ re: '\\b3\\b', as: 'the count, 3' }] }],
+      solution: 'number = int(input("Whole number: "))\ncount = 0\nwhile number > 1:\n    number = number // 2\n    count = count + 1\nprint("Halvings:", count)\n' },
+
+    { id: 'whi5', title: 'Marks until minus one',
+      brief: 'Count them and average them, without knowing how many are coming.',
+      steps: ['Ask for marks one at a time', 'Stop when the user types  -1', 'Print how many marks were entered', 'Then print their average'],
+      example: '3\n20.0',
+      hint: 'You need two variables that survive the loop: a total and a count. Divide one by the other at the end, and beware of dividing by zero if the very first answer is -1.',
+      must: [{ re: '\\bwhile\\b', why: 'The user decides when to stop, so this is a while loop.' }],
+      tests: [{ 'in': ['10', '20', '30', '-1'], want: [{ re: '\\b3\\b', as: 'the count, 3' }, { re: '\\b20\\b', as: 'the average, 20' }] },
+              { 'in': ['5', '10', '-1'], want: [{ re: '\\b2\\b', as: 'the count, 2' }, { re: '7\\.5', as: 'the average, 7.5' }] }],
+      solution: 'total = 0\ncount = 0\nmark = int(input("Mark (-1 to stop): "))\nwhile mark != -1:\n    total = total + mark\n    count = count + 1\n    mark = int(input("Mark (-1 to stop): "))\nprint(count)\nif count > 0:\n    print(total / count)\nelse:\n    print("No marks were entered")\n' }
+  ]},
+
+  /* ------------------------------------------------------------------ 7 */
+  { id: 'strings', code: 'STR', name: 'Strings', sub: 'working with text', colour: '#0F766E',
+    about: 'A string is a row of characters, numbered from 0. len() counts them, [ ] picks them out, and methods like upper() make a changed copy.',
+    items: [
+    { id: 'str1', title: 'How long?',
+      brief: 'Count the characters in a word.',
+      steps: ['Ask for a word', 'Print how many characters it has'],
+      hint: 'len(word) gives the number of characters.',
+      must: [{ re: 'len\\s*\\(', why: 'Use len() rather than counting in a loop.' }],
+      tests: [{ 'in': ['hello'], want: [{ re: '\\b5\\b', as: 'the length, 5' }] },
+              { 'in': ['computer'], want: [{ re: '\\b8\\b', as: 'the length, 8' }] }],
+      solution: 'word = input("A word: ")\nprint("Characters:", len(word))\n' },
+
+    { id: 'str2', title: 'Shout it',
+      brief: 'Capitals, then just the first letter.',
+      steps: ['Ask for a word', 'Print it in capitals', 'Then print its first character on its own'],
+      example: 'ADA\na',
+      hint: 'word.upper() makes a capitalised copy. word[0] is the first character, because positions start at 0.',
+      must: [{ re: 'upper\\s*\\(', why: 'Use the upper() method to make the capitals.' }],
+      tests: [{ 'in': ['ada'], want: ['ADA', { re: '^a$', as: 'the first character on its own line' }] },
+              { 'in': ['sam'], want: ['SAM', { re: '^s$', as: 'the first character on its own line' }] }],
+      solution: 'word = input("A word: ")\nprint(word.upper())\nprint(word[0])\n' },
+
+    { id: 'str3', title: 'Initials',
+      brief: 'Turn a full name into initials with dots.',
+      steps: ['Ask for a first name and a surname on one line, with a space between', 'Print the initials like:  A.L.'],
+      example: 'Ada Lovelace  gives  A.L.',
+      hint: 'split(" ") cuts the line into a list of parts. parts[0] is the first name and parts[1] the surname, so you want the first character of each.',
+      must: [{ re: 'split\\s*\\(', why: 'Use split(" ") to cut the full name into two parts.' }],
+      tests: [{ 'in': ['Ada Lovelace'], want: ['A.L.'] }, { 'in': ['Sam Patel'], want: ['S.P.'] }],
+      solution: 'full = input("Full name: ")\nparts = full.split(" ")\nprint(parts[0][0] + "." + parts[1][0] + ".")\n' },
+
+    { id: 'str4', title: 'Both ends',
+      brief: 'Slicing takes a run of characters rather than just one.',
+      steps: ['Ask for a word of at least three letters', 'Print its first three characters', 'Then print its last three'],
+      example: 'computer  gives  com  then  ter',
+      hint: 'word[:3] is everything up to position 3. word[-3:] counts back from the end.',
+      tests: [{ 'in': ['computer'], want: ['com', 'ter'] }, { 'in': ['program'], want: ['pro', 'ram'] }],
+      solution: 'word = input("A word: ")\nprint(word[:3])\nprint(word[-3:])\n' },
+
+    { id: 'str5', title: 'Counting vowels',
+      brief: 'Visit every character in turn and keep a tally.',
+      steps: ['Ask for a word', 'Print how many vowels (a, e, i, o, u) it contains'],
+      hint: 'A for loop can walk through a string one character at a time. "in" tests whether a character appears in another string: if letter in "aeiou".',
+      must: [{ re: '\\bfor\\b|\\bwhile\\b', why: 'Look at every character with a loop.' }],
+      tests: [{ 'in': ['programming'], want: [{ re: '\\b3\\b', as: 'the number of vowels, 3' }] },
+              { 'in': ['aeiou'], want: [{ re: '\\b5\\b', as: 'the number of vowels, 5' }] },
+              { 'in': ['rhythm'], want: [{ re: '\\b0\\b', as: 'no vowels, 0' }] }],
+      solution: 'word = input("A word: ")\ncount = 0\nfor letter in word:\n    if letter in "aeiou":\n        count = count + 1\nprint("Vowels:", count)\n' }
+  ]},
+
+  /* ------------------------------------------------------------------ 8 */
+  { id: 'arrays', code: 'ARR', name: 'Arrays', sub: 'lists of values', colour: '#2F855A',
+    about: 'An array holds many values under one name, numbered from 0. Python calls them lists and lets them grow with append().',
+    items: [
+    { id: 'arr1', title: 'Three colours',
+      brief: 'Make an array and show everything in it.',
+      steps: ['Make an array holding  red, green  and  blue', 'Print each colour on its own line, using a loop'],
+      hint: 'colours = ["red", "green", "blue"]  then  for colour in colours:',
+      must: [{ re: '\\[', why: 'Make a real array with square brackets.' }, { re: '\\bfor\\b', why: 'Print them with a loop rather than three separate prints.' }],
+      tests: [{ want: ['red', 'green', 'blue'] }],
+      solution: 'colours = ["red", "green", "blue"]\nfor colour in colours:\n    print(colour)\n' },
+
+    { id: 'arr2', title: 'Shopping list',
+      brief: 'An array that starts empty and grows.',
+      steps: ['Start with an empty array', 'Ask for three items and add each one to it', 'Print how many items there are, then print each item'],
+      hint: 'items = [] makes an empty array. items.append(thing) puts something on the end.',
+      must: [{ re: 'append\\s*\\(', why: 'Grow the array with append().' }],
+      tests: [{ 'in': ['milk', 'eggs', 'jam'], want: [{ re: '\\b3\\b', as: 'the number of items, 3' }, 'milk', 'eggs', 'jam'] }],
+      solution: 'items = []\nfor count in range(3):\n    item = input("Item: ")\n    items.append(item)\nprint(len(items))\nfor item in items:\n    print(item)\n' },
+
+    { id: 'arr3', title: 'Swap one out',
+      brief: 'Change a single item, leaving the rest alone.',
+      steps: ['Start with the array  ["apple", "pear", "cherry"]', 'Replace the middle item with  banana', 'Print every item on its own line'],
+      example: 'apple\nbanana\ncherry',
+      hint: 'The middle item is at position 1, because counting starts at 0. fruits[1] = "banana" replaces it.',
+      starter: 'fruits = ["apple", "pear", "cherry"]\n',
+      must: [{ re: 'fruits\\s*\\[\\s*1\\s*\\]\\s*=', why: 'Replace the item in place with  fruits[1] = "banana"' }],
+      tests: [{ want: ['apple', 'banana', 'cherry'] }],
+      solution: 'fruits = ["apple", "pear", "cherry"]\nfruits[1] = "banana"\nfor fruit in fruits:\n    print(fruit)\n' },
+
+    { id: 'arr4', title: 'Linear search',
+      brief: 'Look through an array one item at a time. This algorithm is named in the specification.',
+      steps: ['Use the array of names given below', 'Ask who to look for', 'Print  Found at index  and the position, or  Not in the list'],
+      example: 'Caz  gives  Found at index 2',
+      starter: 'names = ["Ana", "Ben", "Caz", "Dev"]\n',
+      hint: 'Loop over the positions with range(len(names)) so you know where you are. A found variable that starts False remembers whether you ever matched.',
+      must: [{ re: '\\bfor\\b|\\bwhile\\b', why: 'Search with a loop rather than four separate ifs.' }],
+      tests: [{ 'in': ['Caz'], want: ['Found at index 2'] },
+              { 'in': ['Ana'], want: ['Found at index 0'] },
+              { 'in': ['Zoe'], want: ['Not in the list'] }],
+      solution: 'names = ["Ana", "Ben", "Caz", "Dev"]\ntarget = input("Who are you looking for? ")\nfound = False\nfor i in range(len(names)):\n    if names[i] == target:\n        found = True\n        print("Found at index", i)\nif not found:\n    print("Not in the list")\n' },
+
+    { id: 'arr5', title: 'Free seats',
+      brief: 'A 2D array is an array of arrays. Two loops, one inside the other.',
+      steps: ['Use the seating plan given below, where  -  is free and  X  is taken', 'Count the free seats', 'Print the number'],
+      starter: 'seats = [["-", "X", "-"],\n         ["X", "X", "-"],\n         ["-", "X", "X"]]\n',
+      hint: 'The outer loop walks the rows, the inner loop walks the seats in that row. seats[row][seat] is one place.',
+      must: [{ re: '\\bfor\\b[\\s\\S]*\\bfor\\b', why: 'A 2D array needs a loop inside a loop.' }],
+      tests: [{ want: [{ re: '\\b4\\b', as: 'the number of free seats, 4' }] }],
+      solution: 'seats = [["-", "X", "-"],\n         ["X", "X", "-"],\n         ["-", "X", "X"]]\nfree = 0\nfor row in range(3):\n    for seat in range(3):\n        if seats[row][seat] == "-":\n            free = free + 1\nprint("Free seats:", free)\n' }
+  ]},
+
+  /* ------------------------------------------------------------------ 9 */
+  { id: 'subs', code: 'SUB', name: 'Sub programs', sub: 'procedures and functions', colour: '#86198F',
+    about: 'A sub program is a named block of code you can call whenever you need it. A procedure just does a job; a function hands a value back with return.',
+    items: [
+    { id: 'sub1', title: 'A procedure',
+      brief: 'Write it once, use it three times.',
+      steps: ['Define a procedure called  greet  that prints  Hello', 'Call it three times'],
+      hint: 'def greet(): starts the definition. The lines inside it are indented. Nothing happens until you write greet() on its own.',
+      must: [{ re: 'def\\s+greet\\s*\\(', why: 'Define it with  def greet():' }],
+      tests: [{ want: ['hello', 'hello', 'hello'] }],
+      solution: 'def greet():\n    print("Hello")\n\ngreet()\ngreet()\ngreet()\n' },
+
+    { id: 'sub2', title: 'Passing something in',
+      brief: 'A parameter lets the same sub program do a slightly different job each time.',
+      steps: ['Define a procedure  greet  that takes a name and prints  Hello  followed by it', 'Call it for  Sam  and then for  Ada'],
+      example: 'Hello Sam\nHello Ada',
+      hint: 'def greet(name): and then use name inside. Call it with greet("Sam").',
+      must: [{ re: 'def\\s+greet\\s*\\(\\s*\\w+', why: 'Give greet a parameter:  def greet(name):' }],
+      tests: [{ want: ['Hello Sam', 'Hello Ada'] }],
+      solution: 'def greet(name):\n    print("Hello", name)\n\ngreet("Sam")\ngreet("Ada")\n' },
+
+    { id: 'sub3', title: 'A function that answers',
+      brief: 'A function hands a value back to whoever called it.',
+      steps: ['Define a function  area  that takes a width and a height and returns the area', 'Print the area of a 5 by 3 room', 'Print the area of a 10 by 2 hall'],
+      example: '15\n20',
+      hint: 'return sends the answer back and leaves the function immediately. print(area(5, 3)) shows what came back.',
+      must: [{ re: '\\breturn\\b', why: 'A function has to return its answer, not print it.' },
+             { re: 'def\\s+area\\s*\\(', why: 'Call the function area.' }],
+      tests: [{ want: [{ re: '\\b15\\b', as: 'the first area, 15' }, { re: '\\b20\\b', as: 'the second area, 20' }] }],
+      solution: 'def area(width, height):\n    return width * height\n\nprint(area(5, 3))\nprint(area(10, 2))\n' },
+
+    { id: 'sub4', title: 'True or false',
+      brief: 'A function can return a Boolean, which makes it easy to use inside an if.',
+      steps: ['Define a function  isEven  that takes a number and returns True or False', 'Print what it says about 4, then about 7'],
+      example: 'True\nFalse',
+      hint: 'number % 2 == 0 is already True or False, so you can return that whole expression.',
+      must: [{ re: '\\breturn\\b', why: 'Return the answer rather than printing it inside the function.' }],
+      tests: [{ want: ['true', 'false'] }],
+      solution: 'def isEven(number):\n    return number % 2 == 0\n\nprint(isEven(4))\nprint(isEven(7))\n' },
+
+    { id: 'sub5', title: 'Putting it together',
+      brief: 'The main program stays short because the thinking happens in the function.',
+      steps: ['Define a function  highest  that takes three numbers and returns the biggest', 'Ask the user for three numbers', 'Print the answer the function gives back'],
+      hint: 'This is the biggest-of-three problem again, but the comparisons live inside the function and the answer leaves through return.',
+      must: [{ re: 'def\\s+highest\\s*\\(', why: 'Call the function highest.' }, { re: '\\breturn\\b', why: 'The function must return the biggest number.' }],
+      tests: [{ 'in': ['4', '9', '2'], want: [{ re: '\\b9\\b', as: 'the biggest, 9' }] },
+              { 'in': ['12', '3', '7'], want: [{ re: '\\b12\\b', as: 'the biggest, 12' }] }],
+      solution: 'def highest(a, b, c):\n    biggest = a\n    if b > biggest:\n        biggest = b\n    if c > biggest:\n        biggest = c\n    return biggest\n\nfirst = int(input("First: "))\nsecond = int(input("Second: "))\nthird = int(input("Third: "))\nprint("Biggest:", highest(first, second, third))\n' }
+  ]},
+
+  /* ----------------------------------------------------------------- 10 */
+  { id: 'files', code: 'FIL', name: 'File handling', sub: 'reading and writing text files', colour: '#4D7C0F',
+    about: 'Open a file, work with it, then close it. "r" reads, "w" starts again from empty, and "a" adds to the end. The files here are pretend ones, so nothing on the real computer is touched.',
+    items: [
+    { id: 'fil1', title: 'Read the lot',
+      brief: 'There is a file called scores.txt. Show what is in it.',
+      steps: ['Open  scores.txt  for reading', 'Print everything in it', 'Close the file'],
+      hint: 'myFile = open("scores.txt", "r") then myFile.read() hands back the whole thing as one string.',
+      must: [{ re: 'open\\s*\\(', why: 'Open the file with open("scores.txt", "r")' }],
+      tests: [{ files: { 'scores.txt': 'Ada 10\nBen 7\nCaz 9\n' }, want: ['Ada 10', 'Ben 7', 'Caz 9'] }],
+      solution: 'myFile = open("scores.txt", "r")\nprint(myFile.read())\nmyFile.close()\n' },
+
+    { id: 'fil2', title: 'Just the first line',
+      brief: 'Sometimes one line is all you need.',
+      steps: ['Open  scores.txt', 'Print only its first line', 'Close the file'],
+      hint: 'readline() reads one line and remembers where it stopped, ready for the next one.',
+      must: [{ re: 'readline\\s*\\(', why: 'Use readline() to take a single line.' }],
+      tests: [{ files: { 'scores.txt': 'Ada 10\nBen 7\nCaz 9\n' }, want: ['Ada 10'] }],
+      solution: 'myFile = open("scores.txt", "r")\nprint(myFile.readline())\nmyFile.close()\n' },
+
+    { id: 'fil3', title: 'Write it down',
+      brief: 'Make a brand new file and put something in it.',
+      steps: ['Open  greeting.txt  for writing', 'Write the word  Hello  into it', 'Close the file'],
+      hint: 'Mode "w" starts the file again from empty. Nothing is actually saved until you close it.',
+      must: [{ re: 'open\\s*\\([^)]*[\'"]w[\'"]', raw: true, why: 'Open it in write mode, with "w".' }],
+      tests: [{ wantFiles: { 'greeting.txt': 'Hello' } }],
+      solution: 'myFile = open("greeting.txt", "w")\nmyFile.write("Hello")\nmyFile.close()\n' },
+
+    { id: 'fil4', title: 'Add to the end',
+      brief: 'names.txt already has people in it. Add another without losing them.',
+      steps: ['Ask for a name', 'Open  names.txt  so that writing adds to the end', 'Write the name, followed by a new line', 'Close the file'],
+      hint: 'Mode "a" appends. Opening with "w" would wipe Ada and Ben out. End the line with \\n so the next name starts underneath.',
+      must: [{ re: 'open\\s*\\([^)]*[\'"]a[\'"]', raw: true, why: 'Open it in append mode, with "a", or the names already there will be lost.' }],
+      tests: [{ 'in': ['Caz'], files: { 'names.txt': 'Ada\nBen\n' }, wantFiles: { 'names.txt': 'Ada\nBen\nCaz' } },
+              { 'in': ['Dev'], files: { 'names.txt': 'Ada\nBen\n' }, wantFiles: { 'names.txt': 'Ada\nBen\nDev' } }],
+      solution: 'name = input("Name to add: ")\nmyFile = open("names.txt", "a")\nmyFile.write(name + "\\n")\nmyFile.close()\n' },
+
+    { id: 'fil5', title: 'Top score',
+      brief: 'Read a file line by line, pull it apart, and find the best score. This is an exam-sized problem.',
+      steps: ['Open  scores.txt, where every line is a name, a space and a score', 'Find the highest score', 'Print it'],
+      example: 'Ada 10\nBen 7\nCaz 9   gives   10',
+      hint: 'readline() gives "" at the end of the file, which is how the loop knows to stop. split(" ") cuts a line into the name and the score, and int() turns that score into a number.',
+      must: [{ re: 'split\\s*\\(', why: 'Use split(" ") to separate the name from the score.' },
+             { re: '\\bwhile\\b|\\bfor\\b', why: 'Work through the lines with a loop.' }],
+      tests: [{ files: { 'scores.txt': 'Ada 10\nBen 7\nCaz 9\n' }, want: [{ re: '\\b10\\b', as: 'the top score, 10' }] },
+              { files: { 'scores.txt': 'Ana 3\nBen 41\nCaz 9\n' }, want: [{ re: '\\b41\\b', as: 'the top score, 41' }] }],
+      solution: 'myFile = open("scores.txt", "r")\nhighest = 0\nline = myFile.readline()\nwhile line != "":\n    parts = line.split(" ")\n    score = int(parts[1])\n    if score > highest:\n        highest = score\n    line = myFile.readline()\nmyFile.close()\nprint("Top score:", highest)\n' }
+  ]}
+
+  ];
+  return { SETS: SETS };
+}
+
+/* =====================================================================
+   3. BADGES — the picture a student sends to their teacher, and the
+   code printed on it.
+
+   The code is worked out from the name, the set and the date, so a
+   teacher can retype those three things and see whether they still add
+   up. That shows a badge picture has not been edited afterwards. It is
+   not proof that the work was done unaided, and the For teachers panel
+   says so plainly.
+   ===================================================================== */
+function EX_badges() {
+  function hash(text) {                       // FNV-1a, 32 bit
+    var h = 0x811c9dc5, i;
+    for (i = 0; i < text.length; i++) {
+      h ^= text.charCodeAt(i);
+      h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+    }
+    return h >>> 0;
+  }
+  function tidyName(name) { return String(name).replace(/\s+/g, ' ').trim().toLowerCase(); }
+  function codeFor(set, name, date) {
+    var raw = hash(tidyName(name) + '|' + set.id + '|' + date).toString(36).toUpperCase();
+    while (raw.length < 6) raw = '0' + raw;
+    return set.code + '-' + raw.slice(0, 6);
+  }
+  function prettyDate(date) {
+    var parts = String(date).split('-');
+    var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return Number(parts[2]) + ' ' + months[Number(parts[1]) - 1] + ' ' + parts[0];
+  }
+
+  var W = 900, H = 600;
+  function draw(canvas, set, name, date, code) {
+    canvas.width = W; canvas.height = H;
+    var c = canvas.getContext('2d'), ui = '"Atkinson Hyperlegible", Verdana, sans-serif';
+    var mono = '"JetBrains Mono", Consolas, monospace';
+
+    c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, W, H);
+    c.fillStyle = set.colour; c.fillRect(0, 0, W, 132);
+    c.fillStyle = 'rgba(255,255,255,.22)'; c.fillRect(0, 126, W, 6);
+
+    c.textAlign = 'center';
+    c.fillStyle = 'rgba(255,255,255,.85)'; c.font = '700 17px ' + ui;
+    c.fillText('OCR GCSE COMPUTER SCIENCE  J277', W / 2, 48);
+    c.fillStyle = '#FFFFFF'; c.font = '700 40px ' + ui;
+    c.fillText(set.name + ' badge', W / 2, 97);
+
+    // emblem: a ring with a tick in it
+    var cx = W / 2, cy = 228, r = 62;
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2);
+    c.fillStyle = set.colour + '1A'; c.fill();
+    c.lineWidth = 6; c.strokeStyle = set.colour; c.stroke();
+    c.beginPath();
+    c.moveTo(cx - 27, cy + 2); c.lineTo(cx - 8, cy + 22); c.lineTo(cx + 29, cy - 21);
+    c.lineWidth = 11; c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = set.colour; c.stroke();
+
+    c.fillStyle = '#6B7A93'; c.font = '400 19px ' + ui;
+    c.fillText('awarded to', cx, 336);
+    c.fillStyle = '#14213D'; c.font = '700 44px ' + ui;
+    c.fillText(fit(c, name, W - 120, 44, ui), cx, 386);
+
+    c.fillStyle = '#44546F'; c.font = '400 19px ' + ui;
+    c.fillText('for finishing all five ' + set.name.toLowerCase() + ' exercises', cx, 424);
+    c.fillText('and having every one marked correct', cx, 452);
+
+    c.fillStyle = '#6B7A93'; c.font = '400 17px ' + ui;
+    c.fillText(prettyDate(date), cx, 494);
+
+    c.strokeStyle = '#CBD7E6'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(60, 522); c.lineTo(W - 60, 522); c.stroke();
+
+    c.textAlign = 'left';
+    c.fillStyle = '#6B7A93'; c.font = '400 15px ' + ui;
+    c.fillText('computing-hub.github.io/pythonblocks', 60, 556);
+    c.textAlign = 'right';
+    c.fillStyle = '#14213D'; c.font = '700 20px ' + mono;
+    c.fillText(code, W - 60, 558);
+
+    c.strokeStyle = '#CBD7E6'; c.lineWidth = 2; c.strokeRect(1, 1, W - 2, H - 2);
+  }
+  /** Shrink a long name until it fits across the badge. */
+  function fit(c, text, room, size, ui) {
+    var t = String(text);
+    while (size > 20 && c.measureText(t).width > room) { size -= 2; c.font = '700 ' + size + 'px ' + ui; }
+    return t;
+  }
+  function fileName(set, name) {
+    return (set.id + '-badge-' + String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-')).replace(/-+$/, '') + '.png';
+  }
+  return { codeFor: codeFor, draw: draw, prettyDate: prettyDate, fileName: fileName };
+}
+
+/* =====================================================================
+   4. INTERFACE — the set list, one exercise at a time, and the badges
+   ===================================================================== */
+function EX_ui(pythonReady) {
+  var SETS = EX_content().SETS, badges = EX_badges(), core = null, ready = false;
+  var STORE = 'pb-exercises:v1';
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function store(key, value) { try { if (value === undefined) return localStorage.getItem(key); localStorage.setItem(key, value); } catch (e) { return null; } }
+
+  /* ---------------- what we remember ---------------- */
+  var S = { name: '', done: {}, fails: {}, drafts: {}, badges: {}, unlockAll: false };
+  (function () {
+    var saved = null;
+    try { saved = JSON.parse(store(STORE) || 'null'); } catch (e) { saved = null; }
+    if (saved) { for (var k in S) if (saved[k] !== undefined) S[k] = saved[k]; }
+  })();
+  function save() { store(STORE, JSON.stringify(S)); }
+
+  function isDone(ex) { return !!S.done[ex.id]; }
+  function tally(set) { var n = 0; set.items.forEach(function (ex) { if (isDone(ex)) n++; }); return n; }
+  function setDone(set) { return tally(set) === set.items.length; }
+  function unlocked(i) { return i === 0 || S.unlockAll || setDone(SETS[i - 1]); }
+  function today() {
+    var d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+  function toast(text) {
+    var t = $('toast'); t.textContent = text; t.hidden = false;
+    clearTimeout(toast.timer); toast.timer = setTimeout(function () { t.hidden = true; }, 2600);
+  }
+
+  /* ---------------- the list of sets ---------------- */
+  var openAt = { set: 0, ex: -1 };
+  function renderSets() {
+    var box = $('sets'); box.innerHTML = '';
+    box.appendChild(el('h2', null, 'The ten sets'));
+    SETS.forEach(function (set, i) {
+      var can = unlocked(i), n = tally(set);
+      var b = el('button', 'set' + (setDone(set) ? ' done' : ''));
+      b.type = 'button'; b.disabled = !can;
+      b.style.setProperty('--tint', set.colour);
+      if (i === openAt.set) b.setAttribute('aria-current', 'true');
+      b.appendChild(el('span', 'dot'));
+      var who = el('span', 'who');
+      who.appendChild(el('b', null, (i + 1) + '. ' + set.name));
+      who.appendChild(el('small', null, can ? set.sub : 'finish ' + SETS[i - 1].name + ' to open this'));
+      b.appendChild(who);
+      b.appendChild(el('span', 'tally', setDone(set) ? 'badge' : n + '/5'));
+      b.onclick = function () { openAt = { set: i, ex: -1 }; render(); };
+      box.appendChild(b);
+    });
+  }
+
+  /* ---------------- one set ---------------- */
+  function renderSet() {
+    var set = SETS[openAt.set], main = $('main');
+    main.innerHTML = '';
+    var head = el('div', 'head');
+    head.appendChild(el('p', 'eyebrow', 'Set ' + (openAt.set + 1) + ' of ' + SETS.length + '  ·  ' + tally(set) + ' of 5 done'));
+    head.appendChild(el('h1', null, set.name));
+    head.appendChild(el('p', null, set.about));
+    main.appendChild(head);
+
+    var list = el('div', 'tasks');
+    set.items.forEach(function (ex, j) {
+      var t = el('button', 'task' + (isDone(ex) ? ' done' : ''));
+      t.type = 'button'; t.style.setProperty('--tint', set.colour);
+      t.appendChild(el('span', 'num', isDone(ex) ? '✓' : String(j + 1)));
+      var what = el('span', 'what');
+      what.appendChild(el('b', null, ex.title));
+      what.appendChild(el('small', null, ex.brief));
+      t.appendChild(what);
+      var lv = el('span', 'levels');
+      for (var k = 0; k < 5; k++) { var i2 = el('i'); if (k <= j) i2.className = 'on'; lv.appendChild(i2); }
+      t.appendChild(lv);
+      t.appendChild(el('span', 'chev', '›'));
+      t.onclick = function () { openAt = { set: openAt.set, ex: j }; render(); };
+      list.appendChild(t);
+    });
+    main.appendChild(list);
+    main.appendChild(badgePanel(set));
+  }
+
+  /* ---------------- the badge at the end of a set ---------------- */
+  function badgePanel(set) {
+    if (!setDone(set)) {
+      var wait = el('div', 'locked');
+      wait.appendChild(el('b', null, 'The ' + set.name + ' badge'));
+      wait.appendChild(el('p', null, 'Get all five marked correct and the badge is yours to download and send to your teacher.'));
+      return wait;
+    }
+    var card = el('div', 'badge-card');
+    card.style.setProperty('--tint', set.colour);
+    card.appendChild(el('h3', null, '✓  ' + set.name + ' badge earned'));
+
+    var got = S.badges[set.id];
+    if (!got) {
+      card.appendChild(el('p', null, 'Well done: every exercise in this set runs and gives the right answers. Put your name on the badge to take it away with you.'));
+      var go = el('button', 'act', 'Get my badge');
+      go.onclick = function () { askName(set); };
+      card.appendChild(go);
+      return card;
+    }
+
+    card.appendChild(el('p', null, 'Awarded to ' + got.name + ' on ' + badges.prettyDate(got.date) + '. Save the picture and send it to your teacher.'));
+    var canvas = el('canvas');
+    card.appendChild(canvas);
+    card.appendChild(el('div', 'code-out', got.code));
+    var row = el('div', 'row');
+    row.style.justifyContent = 'center';
+    var dl = el('button', 'act', 'Download the badge');
+    dl.onclick = function () { download(canvas, set, got.name); };
+    row.appendChild(dl);
+    var cp = el('button', 'act ghost', 'Copy the code');
+    cp.onclick = function () {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(got.code).then(function () { toast('Code copied'); }, function () { toast('Select the code and copy it'); });
+      else toast('Select the code and copy it');
+    };
+    row.appendChild(cp);
+    card.appendChild(row);
+    paint(canvas, set, got);
+    return card;
+  }
+  function paint(canvas, set, got) {
+    function go() { badges.draw(canvas, set, got.name, got.date, got.code); }
+    if (document.fonts && document.fonts.ready && document.fonts.ready.then) document.fonts.ready.then(go, go); else go();
+  }
+  function download(canvas, set, name) {
+    function give(url, revoke) {
+      var a = el('a'); a.href = url; a.download = badges.fileName(set, name);
+      document.body.appendChild(a); a.click(); a.remove();
+      if (revoke) setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      toast('Badge saved');
+    }
+    if (canvas.toBlob) canvas.toBlob(function (blob) { give(URL.createObjectURL(blob), true); });
+    else give(canvas.toDataURL('image/png'), false);
+  }
+  function askName(set) {
+    form('Your badge', 'The name you type goes on the badge, so write it the way your teacher knows you.',
+      [{ key: 'name', label: 'Your name', value: S.name }], 'Make my badge').then(function (r) {
+      if (!r || !r.name) return;
+      S.name = r.name;
+      S.badges[set.id] = { name: r.name, date: today(), code: badges.codeFor(set, r.name, today()) };
+      save(); render();
+    });
+  }
+
+  /* ---------------- one exercise ---------------- */
+  function renderExercise() {
+    var set = SETS[openAt.set], ex = set.items[openAt.ex], main = $('main');
+    main.innerHTML = '';
+
+    var back = el('button', 'back', '‹  Back to ' + set.name);
+    back.onclick = function () { openAt = { set: openAt.set, ex: -1 }; render(); };
+    main.appendChild(back);
+
+    var head = el('div', 'head');
+    head.appendChild(el('p', 'eyebrow', set.name + '  ·  exercise ' + (openAt.ex + 1) + ' of 5' + (isDone(ex) ? '  ·  done' : '')));
+    head.appendChild(el('h1', null, ex.title));
+    head.appendChild(el('p', null, ex.brief));
+    main.appendChild(head);
+
+    var task = el('div', 'panel');
+    task.appendChild(el('h3', null, 'What to do'));
+    var steps = el('ol', 'steps');
+    ex.steps.forEach(function (s) { steps.appendChild(el('li', null, s)); });
+    task.appendChild(steps);
+    if (ex.example) {
+      var eg = el('div', 'eg');
+      eg.appendChild(el('b', null, 'It should look like this'));
+      eg.appendChild(document.createTextNode(ex.example));
+      task.appendChild(eg);
+    }
+    main.appendChild(task);
+
+    var work = el('div', 'panel');
+    work.appendChild(el('h3', null, 'Your Python'));
+    var codeField = el('div', 'field');
+    var code = el('textarea'); code.id = 'code'; code.spellcheck = false;
+    code.setAttribute('aria-label', 'Your Python for this exercise');
+    code.value = S.drafts[ex.id] !== undefined ? S.drafts[ex.id] : (ex.starter || '');
+    codeField.appendChild(code);
+    work.appendChild(codeField);
+
+    var firstIn = (ex.tests[0] && ex.tests[0]['in']) || [];
+    var givenField = el('div', 'field');
+    var lab = el('label'); lab.setAttribute('for', 'given');
+    lab.textContent = firstIn.length ? 'What gets typed in when you press Try it (one answer per line)' : 'This task needs nothing typed in';
+    givenField.appendChild(lab);
+    var given = el('textarea'); given.id = 'given'; given.spellcheck = false; given.value = firstIn.join('\n');
+    if (!firstIn.length) given.placeholder = 'Nothing to type in for this one';
+    givenField.appendChild(given);
+    work.appendChild(givenField);
+
+    var row = el('div', 'row');
+    var tryBtn = el('button', 'act ghost', 'Try it');
+    var checkBtn = el('button', 'act', 'Check my answer');
+    var hintBtn = el('button', 'act ghost', 'Hint');
+    row.appendChild(checkBtn); row.appendChild(tryBtn); row.appendChild(hintBtn);
+    var solveBtn = null;
+    if ((S.fails[ex.id] || 0) >= 2 || isDone(ex)) {
+      solveBtn = el('button', 'act ghost', 'Show me one way');
+      row.appendChild(solveBtn);
+    }
+    work.appendChild(row);
+
+    var out = el('div'); out.id = 'out';
+    work.appendChild(out);
+    main.appendChild(work);
+
+    var nav = el('div', 'row');
+    if (openAt.ex < 4) {
+      var next = el('button', 'act ghost', 'Next exercise  ›');
+      next.onclick = function () { openAt = { set: openAt.set, ex: openAt.ex + 1 }; render(); };
+      nav.appendChild(next);
+    } else if (setDone(set) && openAt.set < SETS.length - 1) {
+      var nextSet = el('button', 'act ghost', 'On to ' + SETS[openAt.set + 1].name + '  ›');
+      nextSet.onclick = function () { openAt = { set: openAt.set + 1, ex: -1 }; render(); };
+      nav.appendChild(nextSet);
+    }
+    main.appendChild(nav);
+
+    /* --- behaviour --- */
+    var saveTimer = null;
+    code.addEventListener('input', function () {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function () { S.drafts[ex.id] = code.value; save(); }, 400);
+    });
+    code.addEventListener('keydown', function (e) {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        var at = code.selectionStart;
+        code.setRangeText('    ', at, code.selectionEnd, 'end');
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); check(); }
+    });
+    hintBtn.onclick = function () {
+      if (out.querySelector('.tip')) { var t = out.querySelector('.tip'); t.parentNode.removeChild(t); return; }
+      var tip = el('div', 'tip');
+      tip.appendChild(el('b', null, 'Hint: '));
+      tip.appendChild(document.createTextNode(ex.hint));
+      out.appendChild(tip);
+    };
+    if (solveBtn) solveBtn.onclick = function () {
+      var tip = el('div', 'tip');
+      tip.appendChild(el('b', null, 'One way to do it'));
+      var pre = el('div', 'eg'); pre.textContent = ex.solution;
+      tip.appendChild(pre);
+      tip.appendChild(el('p', null, 'Yours does not have to look like this. Read it, then try to write it again in your own way.'));
+      out.innerHTML = ''; out.appendChild(tip);
+    };
+    tryBtn.onclick = function () { tryIt(); };
+    checkBtn.onclick = function () { check(); };
+    if (!ready) { checkBtn.disabled = true; tryBtn.disabled = true; say('dim', 'Python is still loading...'); }
+
+    function say(kind, text) {
+      var con = el('div', 'console');
+      con.appendChild(el('span', kind === 'dim' ? 'dim' : null, text));
+      out.innerHTML = ''; out.appendChild(con);
+      return con;
+    }
+    function busy(on) { checkBtn.disabled = on; tryBtn.disabled = on; }
+
+    function tryIt() {
+      busy(true);
+      var typed = given.value.split('\n');
+      while (typed.length && typed[typed.length - 1] === '') typed.pop();
+      say('dim', 'Running...');
+      core.runTest(code.value, { 'in': typed, want: [] }).then(function (r) {
+        out.innerHTML = '';
+        var con = el('div', 'console');
+        con.appendChild(document.createTextNode(r.output || ''));
+        if (r.ok) con.appendChild(el('span', 'dim', (r.output ? '\n' : '') + 'Finished.'));
+        else { con.appendChild(el('span', 'dim', (r.output ? '\n' : '') + r.why + (r.hint ? '\n' + r.hint : ''))); }
+        out.appendChild(con);
+        busy(false);
+      });
+    }
+
+    function check() {
+      busy(true);
+      say('dim', 'Checking...');
+      core.check(code.value, ex).then(function (r) {
+        out.innerHTML = '';
+        if (r.ok) {
+          var wasNew = !isDone(ex);
+          S.done[ex.id] = true; S.drafts[ex.id] = code.value; save();
+          var v = el('div', 'verdict ok');
+          v.appendChild(el('b', null, '✓  Correct'));
+          v.appendChild(document.createTextNode(wasNew && tally(set) === 5
+            ? 'That is all five. The ' + set.name + ' badge is waiting on the set page.'
+            : 'It does what the task asks, for every case that was tried.'));
+          out.appendChild(v);
+          renderSets();
+          if (tally(set) === 5) {
+            var go = el('button', 'act');
+            go.textContent = 'See the ' + set.name + ' badge';
+            go.style.marginTop = '12px';
+            go.onclick = function () { openAt = { set: openAt.set, ex: -1 }; render(); };
+            out.appendChild(go);
+          }
+          var head2 = document.querySelector('.head .eyebrow');
+          if (head2) head2.textContent = set.name + '  ·  exercise ' + (openAt.ex + 1) + ' of 5  ·  done';
+        } else {
+          S.fails[ex.id] = (S.fails[ex.id] || 0) + 1; S.drafts[ex.id] = code.value; save();
+          var n = el('div', 'verdict no');
+          n.appendChild(el('b', null, 'Not yet'));
+          n.appendChild(document.createTextNode(r.why));
+          if (r.hint) n.appendChild(el('p', 'more', r.hint));
+          if (r.test && (r.test['in'] || []).length) n.appendChild(el('p', 'more', 'This was tried with: ' + r.test['in'].join(', ')));
+          if (r.output) {
+            var got = el('p', 'more');
+            got.textContent = 'Your program printed: ' + (r.output.replace(/\s+$/, '') || '(nothing)');
+            n.appendChild(got);
+          }
+          out.appendChild(n);
+          if ((S.fails[ex.id] || 0) === 2 && !solveBtn) render();
+        }
+        busy(false);
+      });
+    }
+  }
+
+  /* ---------------- dialogs ---------------- */
+  function form(title, blurb, fields, okText) {
+    return new Promise(function (resolve) {
+      var veil = el('div', 'veil'), box = el('div', 'modal'), inputs = {};
+      box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
+      box.appendChild(el('h2', null, title));
+      if (blurb) box.appendChild(el('p', null, blurb));
+      fields.forEach(function (f) {
+        var lab = el('label', null, f.label), inp;
+        if (f.options) {
+          inp = el('select');
+          f.options.forEach(function (o) { var op = el('option', null, o[1]); op.value = o[0]; inp.appendChild(op); });
+        } else { inp = el('input'); inp.setAttribute('autocomplete', 'off'); }
+        inp.value = f.value || '';
+        lab.appendChild(inp); box.appendChild(lab); inputs[f.key] = inp;
+      });
+      var extra = el('div');
+      box.appendChild(extra);
+      function done(r) { veil.remove(); resolve(r); }
+      var row = el('div', 'row');
+      var no = el('button', 'act ghost', 'Cancel'); no.onclick = function () { done(null); }; row.appendChild(no);
+      var ok = el('button', 'act', okText || 'OK');
+      ok.onclick = function () { var o = {}, k; for (k in inputs) o[k] = inputs[k].value.trim(); done(o); };
+      row.appendChild(ok);
+      box.appendChild(row);
+      veil.appendChild(box); document.body.appendChild(veil);
+      veil.addEventListener('keydown', function (e) { if (e.key === 'Enter') ok.click(); if (e.key === 'Escape') done(null); });
+      veil.addEventListener('mousedown', function (e) { if (e.target === veil) done(null); });
+      setTimeout(function () { var first = box.querySelector('input,select'); (first || ok).focus(); if (first && first.select) first.select(); }, 30);
+    });
+  }
+
+  /* ---------------- for teachers ---------------- */
+  function teacherPanel() {
+    var veil = el('div', 'veil'), box = el('div', 'modal');
+    box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
+    box.appendChild(el('h2', null, 'For teachers'));
+    box.appendChild(el('p', null, 'Every exercise is marked by running the student’s Python in the browser and looking at what it prints, for two or more sets of inputs. Some also check that the code really uses the idea being taught, such as a while loop or a function. A set unlocks a badge only when all five are marked correct.'));
+    box.appendChild(el('p', null, 'The code on a badge is worked out from the name, the set and the date. Retype those three below and you will see the same code if the picture has not been altered. It cannot tell you whether the work was the student’s own: treat it as a receipt, not as proof.'));
+
+    var lab = el('label', null, 'Name exactly as written on the badge');
+    var nameIn = el('input'); nameIn.setAttribute('autocomplete', 'off'); lab.appendChild(nameIn); box.appendChild(lab);
+    var lab2 = el('label', null, 'Badge');
+    var pick = el('select');
+    SETS.forEach(function (s) { var o = el('option', null, s.name); o.value = s.id; pick.appendChild(o); });
+    lab2.appendChild(pick); box.appendChild(lab2);
+    var lab3 = el('label', null, 'Date on the badge (year-month-day, such as ' + today() + ')');
+    var dateIn = el('input'); dateIn.setAttribute('placeholder', today()); dateIn.value = today(); lab3.appendChild(dateIn); box.appendChild(lab3);
+
+    var answer = el('div', 'code-out', '—');
+    answer.style.marginTop = '14px';
+    box.appendChild(answer);
+    function work() {
+      var set = SETS.filter(function (s) { return s.id === pick.value; })[0];
+      answer.textContent = nameIn.value.trim() && /^\d{4}-\d{2}-\d{2}$/.test(dateIn.value.trim())
+        ? badges.codeFor(set, nameIn.value, dateIn.value.trim()) : '—';
+    }
+    nameIn.oninput = work; pick.onchange = work; dateIn.oninput = work;
+
+    var unlock = el('button', 'act ghost', S.unlockAll ? 'Lock the sets again' : 'Open every set now');
+    unlock.style.marginTop = '18px';
+    unlock.onclick = function () { S.unlockAll = !S.unlockAll; save(); veil.remove(); render(); };
+    box.appendChild(unlock);
+    box.appendChild(el('p', null, 'Sets normally open one at a time, as each badge is earned. This opens them all on this computer, for a class that is part way through already.'));
+
+    var row = el('div', 'row');
+    var close = el('button', 'act', 'Close'); close.onclick = function () { veil.remove(); }; row.appendChild(close);
+    box.appendChild(row);
+    veil.appendChild(box); document.body.appendChild(veil);
+    veil.addEventListener('mousedown', function (e) { if (e.target === veil) veil.remove(); });
+    veil.addEventListener('keydown', function (e) { if (e.key === 'Escape') veil.remove(); });
+    setTimeout(function () { nameIn.focus(); }, 30);
+  }
+
+  /* ---------------- top bar ---------------- */
+  var theme = store('pb-theme') === 'dark' ? 'dark' : 'light';
+  function applyTheme() {
+    document.documentElement.setAttribute('data-theme', theme);
+    $('btnTheme').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+  }
+  $('btnTheme').onclick = function () { theme = theme === 'dark' ? 'light' : 'dark'; store('pb-theme', theme); applyTheme(); render(); };
+  $('btnTeacher').onclick = teacherPanel;
+  applyTheme();
+
+  /* ---------------- drawing the page ---------------- */
+  function render() {
+    renderSets();
+    if (openAt.ex < 0) renderSet(); else renderExercise();
+    window.scrollTo(0, 0);
+  }
+
+  pythonReady.then(function () {
+    core = EX_core(window.Sk); ready = true;
+    if (openAt.ex >= 0) render();
+  }, function () {
+    ready = false;
+    toast('Python could not be loaded');
+  });
+
+  render();
+  document.body.classList.add('ready');
+  return { SETS: SETS, state: S, render: render };
+}
+
+/* =====================================================================
+   5. START UP — fetch Python (trying a second CDN if the first is
+   blocked), then build the page. The tasks can be read while it loads.
+   ===================================================================== */
+(function () {
+  var S = 'skulpt@1.2.0/dist/';
+  var SOURCES = {
+    skulpt: ['https://cdn.jsdelivr.net/npm/' + S + 'skulpt.min.js', 'https://unpkg.com/' + S + 'skulpt.min.js'],
+    stdlib: ['https://cdn.jsdelivr.net/npm/' + S + 'skulpt-stdlib.js', 'https://unpkg.com/' + S + 'skulpt-stdlib.js']
+  };
+  function fetchScript(urls) {
+    return new Promise(function (resolve, reject) {
+      var i = 0;
+      (function next() {
+        if (i >= urls.length) return reject(new Error('Could not load ' + urls[0]));
+        var s = document.createElement('script'); s.src = urls[i++];
+        s.onload = resolve; s.onerror = function () { s.remove(); next(); };
+        document.head.appendChild(s);
+      })();
+    });
+  }
+  var pythonReady = window.Sk ? Promise.resolve() : fetchScript(SOURCES.skulpt).then(function () { return fetchScript(SOURCES.stdlib); });
+  pythonReady.catch(function () {});
+  window.Exercises = EX_ui(pythonReady);
+})();
+</script>
+</body>
+</html>

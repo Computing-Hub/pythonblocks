@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Two self-contained teaching tools for OCR GCSE Computer Science (J277), each a single HTML file with no build step, no package manager, no server and no test runner:
+Three self-contained teaching tools for OCR GCSE Computer Science (J277), each a single HTML file with no build step, no package manager and no server:
 
 | File | App | Vendored libraries |
 |---|---|---|
@@ -12,6 +12,9 @@ Two self-contained teaching tools for OCR GCSE Computer Science (J277), each a s
 | `python-blocks-ocr-offline.html` | same app | Blockly 13.2.1 + Skulpt 1.2.0 inlined |
 | `flowcharts-ocr.html` | **Flowcharts** — two-way Python ⇄ flowchart editor with step-through execution | fetched from CDN at runtime |
 | `flowcharts-ocr-offline.html` | same app | Skulpt 1.2.0 inlined |
+| `exercises.html` | **Exercises** — 50 auto-marked tasks in 10 sets, each set earning a badge | fetched from CDN at runtime |
+| `exercises-offline.html` | same app | Skulpt 1.2.0 inlined |
+| `index.html` | landing page linking all three (not part of an offline pair) | — |
 
 Python is executed for real by **Skulpt** in the browser; nothing runs on a server.
 
@@ -26,15 +29,19 @@ python3 -m http.server 8000     # then http://localhost:8000/python-blocks-ocr.h
 There is no lint step. Two commands matter:
 
 ```
+python3 tools/build-offline.py extract     # first: refill vendor/ (the exercise tests need Skulpt)
 node tools/test-flowcharts.js              # tests for the flowchart CORE section
+node tools/test-exercises.js               # runs all 50 worked solutions under Skulpt
 python3 tools/build-offline.py check       # are the offline pages in sync? (exit 1 if not)
 ```
 
-Run both before finishing any change. The flowchart CORE never touches the DOM, so the test lifts it out of the HTML with `vm` and exercises it — no source changes, no dependencies. It covers every bundled example (parse → Python → re-parse must not drift, every shape reachable in both the SVG and the `__at()` hooks), the parse errors students trigger, and the ERL translation. **Python Blocks has no equivalent**: its core needs Blockly and a DOM, so changes there still need checking in the browser.
+Run all of these before finishing any change. The flowchart CORE never touches the DOM, so the test lifts it out of the HTML with `vm` and exercises it — no source changes, no dependencies. It covers every bundled example (parse → Python → re-parse must not drift, every shape reachable in both the SVG and the `__at()` hooks), the parse errors students trigger, and the ERL translation. **Python Blocks has no equivalent**: its core needs Blockly and a DOM, so changes there still need checking in the browser.
+
+`test-exercises.js` is the important one for the exercises: it runs **every worked solution against its own tests** under Skulpt, and also runs a do-nothing program against them, so a task that cannot be passed — or one whose tests are so loose anything passes — fails the build. It also renders the page against a stub document, which catches a render or badge-drawing crash.
 
 Anything the tests don't reach is manual: load the page, open **Examples**, run each one, and check the generated Python panel.
 
-Both apps persist to `localStorage` (`python-blocks-ocr:v1`, `flowchart-ocr:v1`, shared theme key `pb-theme`). Clear these when testing first-run behaviour.
+The apps persist to `localStorage` (`python-blocks-ocr:v1`, `flowchart-ocr:v1`, `pb-exercises:v1`, shared theme key `pb-theme`). Clear these when testing first-run behaviour — the exercises page keeps progress, drafts and earned badges there, so it is the one to clear when checking how a new student sees it.
 
 ## The online/offline pairing — read before editing anything
 
@@ -67,6 +74,13 @@ Each app script is a small number of top-level factory functions, separated by b
 - **VIRTUAL FILES** is a Python source string built by `PB_VFS`, imported into Skulpt as `pbfiles` and bound over the built-in `open()`. Files live in a JS object; after each run the module's `_files` dict is read back with `Sk.ffi.remapToJs`.
 - **INTERFACE** owns the workspace, the help/examples drawer, the code panel, the console and the runner.
 
+**Exercises** — `EX_core(Sk)` → `EX_content()` → `EX_badges()` → `EX_ui(pythonReady)` → START UP.
+
+- **CORE** is the marker, and takes `Sk` as an argument rather than reading `window.Sk`, so the tests can drive it. It compares **only what the program printed** — prompts never reach the output buffer — with spacing collapsed and capitals ignored, and each `want` must appear *in order*. `must`/`forbid` rules additionally check the source (does it really use a `while` loop?), matched against a copy with strings and comments blanked out; a rule marked `raw: true` opts out of that, for when the thing being asked for *is* a string, like `open(f, "w")`.
+- **CONTENT** holds the ten sets. An exercise carries its own `tests` and one `solution`; difficulty is the position in the set, not a field. `tests` may supply `in` (typed answers), `files`/`wantFiles` (the virtual filesystem) and `runs` (repeat a test).
+- **BADGES** draws the PNG on a canvas and derives its check-code from name + set + date with FNV-1a. The teacher panel recomputes that code so an edited badge picture stops matching. It is a receipt, not proof of authorship, and the panel says so.
+- `EX_core`'s `VFS()` is a **copy** of `PB_VFS` from `python-blocks-ocr.html` — single-file pages cannot share code. `test-exercises.js` asserts the two are identical (ignoring JS indentation), so they cannot drift.
+
 **Flowcharts** — `FC_core()` → `FC_content()` → `FC_ui(pythonReady)` → START UP.
 
 - **CORE** is the interesting part. The program model is `{ imports, subs, main }` with statement nodes typed `process | input | output | call | if | while | for`. `parse(source)` is a hand-written indentation parser (throws `ParseError(message, line)`); `toPython(prog, trace)` goes back the other way; `toERL(prog)` renders OCR Exam Reference Language; `draw(prog, opts)` lays the chart out around a vertical axis and returns an SVG string plus `slots` (the clickable `+` insertion points).
@@ -89,4 +103,5 @@ Each app script is a small number of top-level factory functions, separated by b
 
 - **A Python Blocks example or help topic**: copy an entry in `PB_content` and rewrite it with the `D` builder. Don't hand-write the Python for the help panel — it is generated from the same blocks.
 - **A new block**: add to `DEFS`, add a generator in `defineGenerators`, add it to `TOOLBOX`, and usually add a `D` helper so examples can use it.
+- **An exercise**: copy an entry in `EX_content`, keeping five per set and the easiest first. Write the `solution` and run `node tools/test-exercises.js` — it will tell you if the solution fails, or if the tests are so loose that a do-nothing program passes. Give at least two tests with different inputs, and prefer `{ re: '\\b15\\b' }` over the bare string `'15'` for numbers, so `150` cannot match by accident.
 - **A flowchart example**: entries in `FC_content` are plain Python strings, and they must parse under the deliberately narrow subset — spaces not tabs, `import` lines at the top, sub programs at the left margin, `return` only as the last line of a function, and `for x in range(...)` as the only loop form. Anything outside that must produce a helpful `ParseError`, not a crash.

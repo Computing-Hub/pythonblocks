@@ -34,6 +34,15 @@ APPS = [
         ],
     },
     {
+        'online': 'exercises.html',
+        'offline': 'exercises-offline.html',
+        'note': '<!-- Offline copy: Skulpt 1.2.0 is included below, so no internet is needed. -->',
+        'libs': [
+            ('skulpt/dist/skulpt.min.js', 'skulpt.min.js'),
+            ('skulpt/dist/skulpt-stdlib.js', 'skulpt-stdlib.js'),
+        ],
+    },
+    {
         'online': 'flowcharts-ocr.html',
         'offline': 'flowcharts-ocr-offline.html',
         'note': '<!-- Offline copy: Skulpt 1.2.0 is included below, so no internet is needed. -->',

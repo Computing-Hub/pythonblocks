@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Python Blocks and Flowcharts for OCR GCSE Computer Science</title>
-<meta name="description" content="Two free browser tools for OCR GCSE Computer Science (J277): a block editor that writes Python, and a flowchart editor that runs it.">
+<title>Python, Flowcharts and Exercises for OCR GCSE Computer Science</title>
+<meta name="description" content="Free browser tools for OCR GCSE Computer Science (J277): fifty marked exercises with badges, a block editor that writes Python, and a flowchart editor that runs it.">
 <!--
-  The front door. Links to the two tools and to their offline copies.
+  The front door. Links to the three tools and to their offline copies.
   Same palette, fonts and dark mode as the tools, and it shares their
   "pb-theme" setting, so the choice follows you into a tool and back.
 -->
@@ -17,14 +17,14 @@
   --paper:#F4F7FB; --surface:#FFFFFF; --surface-2:#EAF0F8; --line:#CBD7E6;
   --ink:#14213D; --ink-2:#44546F; --ink-3:#6B7A93;
   --run:#FFD23F; --run-ink:#14213D; --focus:#1971C2; --accent:#1971C2;
-  --blocks:#1971C2; --charts:#C2410C;
+  --blocks:#1971C2; --charts:#C2410C; --practice:#86198F;
   --ui:"Atkinson Hyperlegible","Verdana","Segoe UI",system-ui,sans-serif;
   --mono:"JetBrains Mono","Cascadia Code","Consolas","Menlo",monospace;
 }
 :root[data-theme="dark"]{
   --paper:#0F1729; --surface:#17213A; --surface-2:#1E2B49; --line:#2C3B5E;
   --ink:#E6ECF8; --ink-2:#B5C2DA; --ink-3:#8797B5;
-  --focus:#74C0FC; --accent:#74C0FC; --blocks:#74C0FC; --charts:#FFA94D;
+  --focus:#74C0FC; --accent:#74C0FC; --blocks:#74C0FC; --charts:#FFA94D; --practice:#E599F7;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--ui);font-size:16px;line-height:1.5;color:var(--ink);background:var(--paper);min-height:100vh}
@@ -77,10 +77,23 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);color:v
 <div class="wrap">
   <div class="lede">
     <h1>Write Python in blocks. Draw it as a flowchart. Watch it run.</h1>
-    <p>Two tools for OCR GCSE Computer Science. Both run entirely in the browser, with nothing to install and no account to make: the Python is really executed, one step at a time if you want.</p>
+    <p>Three tools for OCR GCSE Computer Science. They all run entirely in the browser, with nothing to install and no account to make: the Python is really executed, one step at a time if you want. Start with the exercises if you want to be told what to do next.</p>
   </div>
 
   <div class="cards">
+    <section class="card" style="--tint:var(--practice)">
+      <h2>Exercises</h2>
+      <p class="sub">Fifty tasks, ten badges, in order</p>
+      <ul>
+        <li>Ten sets of five, from your first <code>print()</code> to reading a file</li>
+        <li>Each one is marked by really running your Python and checking what it does</li>
+        <li>Stuck twice? It will show you one way of doing it</li>
+        <li>Finish a set and earn a badge to send to your teacher</li>
+      </ul>
+      <a class="go" href="exercises.html">Start the exercises</a>
+      <a class="dl" href="exercises-offline.html" download>No internet in the classroom? <b>Download the offline copy</b> (1.0 MB)</a>
+    </section>
+
     <section class="card" style="--tint:var(--blocks)">
       <h2>Python Blocks</h2>
       <p class="sub">Drag blocks together, get real Python</p>
@@ -111,7 +124,7 @@ footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);color:v
   <div class="note">
     <h3>About the offline copies</h3>
     <p>The ordinary pages fetch Blockly and Python from the internet the first time they are used. The offline copies have both built in, so they work with the network switched off: save one to a memory stick or a shared drive, open it in any browser, and everything still runs.</p>
-    <p>Work is saved in the browser it was made in, so it stays on that computer. Use <b>Copy code</b> or <b>Save picture</b> to take work somewhere else.</p>
+    <p>Work is saved in the browser it was made in, so it stays on that computer. Use <b>Copy code</b> or <b>Save picture</b> to take work somewhere else, and download each badge as you earn it.</p>
   </div>
 
   <footer>
