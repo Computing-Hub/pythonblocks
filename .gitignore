@@ -1,0 +1,5 @@
+# Rebuilt from the offline pages: python3 tools/build-offline.py extract
+vendor/
+
+__pycache__/
+.DS_Store

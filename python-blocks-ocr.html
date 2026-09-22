@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python Blocks for OCR GCSE Computer Science</title>
+<!--
+  Python Blocks (OCR J277 edition). One self-contained page: no build step, no server.
+  Blocks are built with Blockly; the Python they produce is run for real in the browser by Skulpt.
+  Sections of the script below: 1 CORE (blocks, generators, toolbox)  2 CONTENT (help topics, examples)
+  3 VIRTUAL FILES  4 INTERFACE  5 START UP (library loading).
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F7FB; --surface:#FFFFFF; --surface-2:#EAF0F8; --line:#CBD7E6; --grid:#DCE6F2;
+  --ink:#14213D; --ink-2:#44546F; --ink-3:#6B7A93;
+  --run:#FFD23F; --run-ink:#14213D; --stop:#C92A2A; --focus:#1971C2; --accent:#1971C2;
+  --code-bg:#FFFFFF; --code-ink:#14213D; --code-no:#9AA8BD; --code-hit:#FFF1B8;
+  --con-bg:#101A30; --con-ink:#DCE7F7; --con-dim:#8FA2C0; --con-err:#FF9B9B; --con-in:#FFD23F;
+  --kw:#A61E4D; --fn:#1864AB; --st:#2B7A0B; --nb:#B45309; --cm:#6B7280;
+  --ui:"Atkinson Hyperlegible","Verdana","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code","Consolas","Menlo",monospace;
+  --side-w:clamp(320px,29vw,430px);
+}
+:root[data-theme="dark"]{
+  --paper:#0F1729; --surface:#17213A; --surface-2:#1E2B49; --line:#2C3B5E; --grid:#1B2742;
+  --ink:#E6ECF8; --ink-2:#B5C2DA; --ink-3:#8797B5;
+  --run:#FFD23F; --run-ink:#14213D; --focus:#74C0FC; --accent:#74C0FC;
+  --code-bg:#131D34; --code-ink:#E6ECF8; --code-no:#5C6E90; --code-hit:#4A3F12;
+  --con-bg:#0A1122;
+  --kw:#FF8FB1; --fn:#8CC8FF; --st:#A5E08A; --nb:#FFC078; --cm:#8797B5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+/* Code must look exactly as it is typed: stop the code font joining >= into \2265, != into \2260, == into one long bar */
+*,svg text{font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0,"clig" 0}
+html,body{height:100%}
+body{font-family:var(--ui);font-size:15px;line-height:1.45;color:var(--ink);background:var(--paper);display:grid;grid-template-rows:auto minmax(0,1fr);height:100dvh;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
+
+/* ---------- top bar ---------- */
+.bar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--ink);color:#fff;flex-wrap:wrap}
+:root[data-theme="dark"] .bar{background:#0A1122;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:6px}
+.brand strong{font-size:19px;letter-spacing:-.01em}
+.brand span{font-size:13px;color:#B9C6DC}
+.bar .spacer{flex:1}
+.nb{border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;padding:6px 13px;border-radius:8px;font-weight:700;font-size:14px}
+.nb:hover{background:rgba(255,255,255,.12)}
+.nb[aria-expanded="true"]{background:#fff;color:#14213D;border-color:#fff}
+.nb.quiet{border-color:transparent;font-weight:400;color:#D5DEEE}
+.nb.run{background:var(--run);color:var(--run-ink);border-color:var(--run);padding:6px 20px}
+.nb.run:hover{filter:brightness(1.06)}
+.nb.stop{background:var(--stop);border-color:var(--stop)}
+.nb.armed{background:#FFE3E3;color:#8A1C1C;border-color:#FFE3E3}
+.nb[hidden]{display:none}
+
+/* ---------- main layout ---------- */
+.app{display:grid;grid-template-columns:auto minmax(0,1fr) 7px var(--side-w);min-height:0}
+.drawer{width:clamp(320px,27vw,400px);background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.drawer[hidden]{display:none}
+.drawer{grid-column:1}.stage{grid-column:2}.handle{grid-column:3}.side{grid-column:4}
+.stage{position:relative;min-width:0;min-height:0}
+#blocklyDiv{position:absolute;inset:0}
+.empty{position:absolute;left:50%;top:42%;transform:translate(-30%,-50%);max-width:340px;color:var(--ink-3);font-size:16px;pointer-events:none;text-align:left}
+.empty b{display:block;color:var(--ink-2);font-size:20px;margin-bottom:6px}
+.empty[hidden]{display:none}
+.zoom{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.zoom button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:20px;line-height:1;color:var(--ink-2)}
+.zoom button:hover{background:var(--surface-2)}
+.handle{background:var(--line);cursor:col-resize}
+.handle:hover,.handle.on{background:var(--accent)}
+.side{display:grid;grid-template-rows:minmax(0,1.15fr) minmax(0,1fr);min-width:0;min-height:0;background:var(--surface)}
+.pane{display:flex;flex-direction:column;min-height:0;min-width:0}
+.pane + .pane{border-top:1px solid var(--line)}
+.pane-head{display:flex;align-items:center;gap:4px;padding:6px 10px;background:var(--surface-2);border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
+.pane-head .grow{flex:1}
+.mini{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:3px 10px;font-size:13px;font-weight:400}
+.mini:hover{background:var(--paper)}
+.tab{border:0;background:transparent;padding:4px 10px;border-radius:7px;font-weight:700;color:var(--ink-3)}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+
+/* ---------- code view ---------- */
+.code{flex:1;overflow:auto;background:var(--code-bg);color:var(--code-ink);font-family:var(--mono);font-size:14px;line-height:1.6;padding:10px 0}
+.ln{display:flex;white-space:pre;padding-right:14px}
+.ln .no{flex:none;width:42px;text-align:right;padding-right:12px;color:var(--code-no);user-select:none}
+.ln.hit{background:var(--code-hit)}
+.code .hint{padding:4px 16px;color:var(--ink-3);font-family:var(--ui);font-size:15px;white-space:normal}
+.kw{color:var(--kw);font-weight:700}.fn{color:var(--fn)}.st{color:var(--st)}.nu{color:var(--nb)}.cm{color:var(--cm);font-style:italic}
+
+/* ---------- console + files ---------- */
+.console{flex:1;overflow:auto;background:var(--con-bg);color:var(--con-ink);font-family:var(--mono);font-size:14px;line-height:1.55;padding:10px 14px;white-space:pre-wrap;word-break:break-word}
+.console .dim{color:var(--con-dim);font-family:var(--ui)}
+.console .err{color:var(--con-err);font-family:var(--ui);white-space:normal;margin-top:6px;display:block}
+.console .err b{color:#fff}
+.console .typed{color:var(--con-in)}
+.console input{font:inherit;color:var(--con-in);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.3);border-radius:5px;padding:1px 6px;min-width:12ch;width:60%}
+.files{flex:1;overflow:auto;padding:10px 12px;background:var(--surface)}
+.files p{color:var(--ink-3);font-size:14px;margin-bottom:10px}
+.file{border:1px solid var(--line);border-radius:9px;margin-bottom:10px;overflow:hidden}
+.file header{display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--surface-2);font-family:var(--mono);font-size:13px;font-weight:700}
+.file header span{flex:1}
+.file pre{font-family:var(--mono);font-size:13px;padding:8px 10px;white-space:pre-wrap;max-height:160px;overflow:auto}
+.file pre:empty::before{content:"(empty file)";color:var(--ink-3);font-family:var(--ui)}
+[hidden]{display:none !important}
+
+/* ---------- drawer: help + examples ---------- */
+.drawer-head{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.drawer-head .grow{flex:1}
+.drawer-body{flex:1;overflow:auto;position:relative;padding:12px 12px 40px}
+.lede{color:var(--ink-2);margin:2px 4px 12px;max-width:44ch}
+.group{font-size:13px;font-weight:700;color:var(--ink-3);margin:16px 4px 6px}
+.topic{display:flex;width:100%;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;margin-bottom:6px;font-weight:700}
+.topic:hover{background:var(--paper)}
+.topic i{flex:none;width:10px;height:22px;border-radius:3px;background:var(--c,#888)}
+.topic span{flex:1}
+.topic small{font-weight:400;color:var(--ink-3);display:block;font-size:13.5px}
+.topic::after{content:"+";color:var(--ink-3);font-weight:400;font-size:18px;line-height:1}
+.topic.example::after{content:"";display:none}
+.topic[aria-expanded="true"]{border-radius:10px 10px 0 0;background:var(--surface-2);margin-bottom:0}
+.topic[aria-expanded="true"]::after{content:"\2212"}
+.detail{border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;padding:12px 12px 14px;margin-bottom:8px;background:var(--surface)}
+.detail p{margin-bottom:9px;max-width:48ch}
+.detail h4{font-size:13px;color:var(--ink-3);margin:12px 0 4px;font-weight:700}
+.detail pre{font-family:var(--mono);font-size:13px;line-height:1.55;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px;overflow-x:auto;white-space:pre}
+.detail table{border-collapse:collapse;width:100%;font-size:13.5px;margin:4px 0 8px}
+.detail th{text-align:left;color:var(--ink-3);font-size:12.5px;padding:3px 6px;border-bottom:1px solid var(--line)}
+.detail td{padding:4px 6px;border-bottom:1px solid var(--grid);vertical-align:top}
+.detail td code{font-family:var(--mono);font-size:13px;white-space:nowrap}
+.note{background:#FFF6D6;border-left:4px solid var(--run);padding:7px 10px;border-radius:0 8px 8px 0;margin:10px 0 0;font-size:14px;color:#3D3205}
+:root[data-theme="dark"] .note{background:#3A3210;color:#F6E7A8}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.act{border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:8px;padding:6px 12px;font-weight:700;font-size:14px}
+:root[data-theme="dark"] .act{background:var(--run);color:var(--run-ink);border-color:var(--run)}
+.act.ghost{background:transparent;color:var(--ink);border-color:var(--line);font-weight:400}
+.act.armed{background:#FFE3E3;color:#8A1C1C;border-color:#F3B4B4}
+
+/* ---------- toast + modal ---------- */
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-weight:700;z-index:200;max-width:90vw;box-shadow:0 6px 24px rgba(10,20,45,.3)}
+:root[data-theme="dark"] .toast{background:#fff;color:#14213D}
+.veil{position:fixed;inset:0;background:rgba(10,18,36,.55);display:grid;place-items:center;z-index:80;padding:16px}
+.modal{background:var(--surface);color:var(--ink);border-radius:14px;padding:18px;width:min(380px,100%);box-shadow:0 18px 60px rgba(0,0,0,.4)}
+.modal p{margin-bottom:10px;font-weight:700}
+.modal input{width:100%;font:inherit;font-family:var(--mono);padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.modal .actions{justify-content:flex-end}
+.fatal{margin:40px auto;max-width:520px;padding:0 20px}
+
+/* ---------- Blockly chrome ---------- */
+.blocklyToolbox,.blocklyToolboxDiv{background:var(--surface) !important;border-right:1px solid var(--line);padding:6px 0 !important;color:var(--ink)}
+.blocklyToolboxCategory,.blocklyTreeRow{padding:4px 8px 4px 4px !important;margin:1px 4px !important;border-radius:7px;height:auto !important;line-height:1.5 !important}
+.blocklyToolboxCategoryLabel,.blocklyTreeLabel{font-family:var(--ui) !important;font-size:14px !important;font-weight:700;color:inherit}
+.blocklyToolboxSelected .blocklyToolboxCategoryLabel,.blocklyTreeSelected .blocklyTreeLabel{color:#fff}
+.blocklyTreeSeparator,.blocklyToolboxSeparator{border-bottom:1px solid var(--line) !important;margin:6px 10px !important}
+.blocklyFlyoutButton .blocklyFlyoutButtonBackground,.blocklyFlyoutButton{fill:var(--ink)}
+.blocklyFlyoutLabelText{fill:var(--ink-2) !important;font-family:var(--ui) !important}
+.blocklyWidgetDiv .blocklyMenu,.blocklyDropDownDiv{font-family:var(--ui)}
+
+@media (max-width:980px){
+  body{overflow:auto;height:auto;min-height:100dvh}
+  .app{grid-template-columns:minmax(0,1fr);grid-auto-rows:auto}
+  .drawer,.stage,.handle,.side{grid-column:1}
+  .drawer{width:100%;max-height:60vh;border-right:0;border-bottom:1px solid var(--line)}
+  .stage{height:62vh}
+  .handle{display:none}
+  .side{grid-template-rows:auto auto}
+  .pane{height:300px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .detail{animation:open .16s ease-out}
+  @keyframes open{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><strong>Python Blocks</strong><span>OCR GCSE Computer Science J277</span></div>
+  <button class="nb" id="btnHelp" type="button" aria-expanded="false" aria-controls="drawer">Help</button>
+  <button class="nb" id="btnExamples" type="button" aria-expanded="false" aria-controls="drawer">Examples</button>
+  <span class="spacer"></span>
+  <button class="nb quiet" id="btnTheme" type="button">Dark mode</button>
+  <button class="nb" id="btnClear" type="button">Clear</button>
+  <button class="nb" id="btnCopy" type="button">Copy code</button>
+  <button class="nb stop" id="btnStop" type="button" hidden>Stop</button>
+  <button class="nb run" id="btnRun" type="button" title="Run (Ctrl + Enter)">Run</button>
+</header>
+
+<main class="app">
+  <aside class="drawer" id="drawer" aria-label="Help and examples" hidden>
+    <div class="drawer-head" role="tablist">
+      <button class="tab" id="tabHelp" type="button" role="tab" aria-selected="false">Help</button>
+      <button class="tab" id="tabExamples" type="button" role="tab" aria-selected="false">Examples</button>
+      <span class="grow"></span>
+      <button class="mini" id="btnCloseDrawer" type="button">Close</button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
+
+  <section class="stage" aria-label="Block workspace">
+    <div id="blocklyDiv"></div>
+    <div class="empty" id="empty"><b>Build your program here</b>Drag blocks out of the menu and snap them under the start block, top to bottom. To delete a block, drag it back onto the menu. Not sure where to start? Open Examples.</div>
+    <div class="zoom">
+      <button id="zoomIn" type="button" aria-label="Zoom in">+</button>
+      <button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button>
+      <button id="zoomFit" type="button" aria-label="Fit blocks on screen" title="Fit on screen">&#9635;</button>
+    </div>
+  </section>
+
+  <div class="handle" id="handle" aria-hidden="true"></div>
+
+  <section class="side">
+    <div class="pane">
+      <div class="pane-head"><span>Python code</span></div>
+      <div class="code" id="code" aria-live="off"></div>
+    </div>
+    <div class="pane">
+      <div class="pane-head" role="tablist">
+        <button class="tab" id="tabConsole" type="button" role="tab" aria-selected="true">Console</button>
+        <button class="tab" id="tabFiles" type="button" role="tab" aria-selected="false">Files</button>
+        <span class="grow"></span>
+        <button class="mini" id="btnClearConsole" type="button">Clear</button>
+      </div>
+      <div class="console" id="console" role="log"></div>
+      <div class="files" id="files" hidden></div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* =====================================================================
+   1. CORE — blocks, Python generators, toolbox, program builder
+   Works in the browser and in Node (for testing).
+   ===================================================================== */
+function PB_core(Blockly, pythonNS) {
+  var pg = pythonNS.pythonGenerator, Order = pythonNS.Order;
+
+  /* ---- start block: one of these two-word phrases is picked at random each time the page opens.
+     Add, remove or reword them freely. ---- */
+  var PHRASES = ["Let's code", 'Keep going', 'Think big', 'Stay curious', 'Be bold', 'Dream big', 'Start strong',
+    'Go create', 'Build something', 'Think logically', 'Debug calmly', 'Try it', 'Make mistakes', 'Own it', 'Aim high'];
+  var PHRASE = PHRASES[Math.floor(Math.random() * PHRASES.length)];
+
+  /* ---- colours: one per concept, all readable with white text ---- */
+  var COL = {
+    io: '#C2255C', vars: '#1971C2', values: '#5F3DC4', ops: '#A16207', cast: '#475569',
+    strings: '#0F766E', arrays: '#2F855A', select: '#C2410C', loops: '#4C51BF',
+    subs: '#86198F', files: '#4D7C0F', random: '#0E7490', comment: '#64748B'
+  };
+
+  /* ---------------------------------------------------------------
+     Block definitions
+     --------------------------------------------------------------- */
+  var START_COLOUR = '#14213D';
+  var STMT = { previousStatement: null, nextStatement: null };
+  function val(name) { return { type: 'input_value', name: name }; }
+  function body(name) { return { type: 'input_statement', name: name }; }
+  function varf(name, def) { return { type: 'field_variable', name: name, variable: def }; }
+  function txt(name, def) { return { type: 'field_input', name: name, text: def, spellcheck: false }; }
+  function dd(name, opts) { return { type: 'field_dropdown', name: name, options: opts }; }
+  function def(type, style, tip, spec) {
+    spec.type = type; spec.style = style; spec.tooltip = tip; spec.inputsInline = true;
+    return spec;
+  }
+  function merge(a, b) { var o = {}, k; for (k in a) o[k] = a[k]; for (k in b) o[k] = b[k]; return o; }
+
+  var ARITH = [['+', '+'], ['-', '-'], ['*', '*'], ['/', '/'], ['//  (DIV)', '//'], ['%  (MOD)', '%'], ['**  (power)', '**']];
+  var COMPARE = [['==', '=='], ['!=', '!='], ['<', '<'], ['<=', '<='], ['>', '>'], ['>=', '>='], ['in', 'in'], ['not in', 'not in']];
+
+  var DEFS = [
+    /* start of the program (a hat block, like Scratch's green flag) */
+    def('py_start', 'start', 'Your program starts here. Only blocks snapped underneath run; loose blocks are ignored.', { message0: '\u25B6  %1', args0: [{ type: 'field_label', name: 'PHRASE', text: 'Start' }], nextStatement: null, extensions: ['pb_start'] }),
+
+    /* input and output */
+    def('py_print', 'io', 'Output: show a value on the screen.', merge(STMT, { message0: 'print( %1 )', args0: [val('V')] })),
+    def('py_print2', 'io', 'Output two values on one line, separated by a space.', merge(STMT, { message0: 'print( %1 , %2 )', args0: [val('A'), val('B')] })),
+    def('py_input', 'io', 'Input: ask the user to type something. Always gives back a string.', { message0: 'input( %1 )', args0: [val('P')], output: null }),
+
+    /* values */
+    def('py_text', 'values', 'A string (text). Type \\n for a new line.', { message0: '" %1 "', args0: [txt('T', 'Hello')], output: null }),
+    def('py_num', 'values', 'A number. Whole numbers are integers, numbers with a decimal point are reals (floats).', { message0: '%1', args0: [txt('N', '0')], output: null, extensions: ['pb_number'] }),
+    def('py_bool', 'values', 'A Boolean value.', { message0: '%1', args0: [dd('B', [['True', 'True'], ['False', 'False']])], output: null }),
+
+    /* variables and constants */
+    def('py_set', 'vars', 'Assignment: store a value in a variable.', merge(STMT, { message0: '%1 = %2', args0: [varf('VAR', 'score'), val('V')] })),
+    def('py_get', 'vars', 'Use the value stored in a variable.', { message0: '%1', args0: [varf('VAR', 'score')], output: null }),
+    def('py_const', 'vars', 'A constant: a value that must not change. Write its name in CAPITALS.', merge(STMT, { message0: 'const %1 = %2', args0: [varf('VAR', 'VAT'), val('V')] })),
+    def('py_global', 'vars', 'Inside a sub program: lets you change a variable from the main program.', merge(STMT, { message0: 'global %1', args0: [varf('VAR', 'score')] })),
+
+    /* operators */
+    def('py_arith', 'ops', 'Arithmetic: + - * / and DIV (//), MOD (%), power (**).', { message0: '%1 %2 %3', args0: [val('A'), dd('OP', ARITH), val('B')], output: null }),
+    def('py_compare', 'ops', 'Comparison: gives True or False.', { message0: '%1 %2 %3', args0: [val('A'), dd('OP', COMPARE), val('B')], output: null }),
+    def('py_logic', 'ops', 'Boolean operator: combine two conditions.', { message0: '%1 %2 %3', args0: [val('A'), dd('OP', [['and', 'and'], ['or', 'or']]), val('B')], output: null }),
+    def('py_not', 'ops', 'Boolean NOT: reverses True and False.', { message0: 'not %1', args0: [val('A')], output: null }),
+    def('py_round', 'ops', 'Round a number to a number of decimal places.', { message0: 'round( %1 , %2 )', args0: [val('X'), val('N')], output: null }),
+
+    /* casting */
+    def('py_cast', 'cast', 'Casting: convert a value to another data type.', { message0: '%1 ( %2 )', args0: [dd('FN', [['int', 'int'], ['float', 'float'], ['str', 'str'], ['bool', 'bool']]), val('V')], output: null }),
+
+    /* strings */
+    def('py_len', 'strings', 'Length: how many characters in a string, or items in an array.', { message0: 'len( %1 )', args0: [val('S')], output: null }),
+    def('py_method', 'strings', 'String method: change case, tidy spaces, or test the contents.', { message0: '%1 . %2', args0: [val('S'), dd('M', [['upper()', 'upper'], ['lower()', 'lower'], ['strip()', 'strip'], ['isdigit()', 'isdigit'], ['isalpha()', 'isalpha']])], output: null }),
+    def('py_slice', 'strings', 'Substring: characters from a start position up to, but not including, an end position.', { message0: '%1 [ %2 : %3 ]', args0: [val('S'), val('A'), val('B')], output: null }),
+    def('py_left', 'strings', 'The first n characters.', { message0: '%1 [ : %2 ]', args0: [val('S'), val('N')], output: null }),
+    def('py_right', 'strings', 'The last n characters.', { message0: '%1 [ - %2 : ]', args0: [val('S'), val('N')], output: null }),
+    def('py_index', 'strings', 'One character of a string, or one item of an array. Positions start at 0.', { message0: '%1 [ %2 ]', args0: [val('S'), val('I')], output: null }),
+    def('py_ord', 'strings', 'The ASCII code of a character.', { message0: 'ord( %1 )', args0: [val('V')], output: null }),
+    def('py_chr', 'strings', 'The character for an ASCII code.', { message0: 'chr( %1 )', args0: [val('V')], output: null }),
+    def('py_split', 'strings', 'Split a string into an array of parts, for example at each comma.', { message0: '%1 .split( %2 )', args0: [val('S'), val('SEP')], output: null }),
+
+    /* arrays */
+    def('py_list', 'arrays', 'An array with starting values. Separate the items with commas; put strings in quotes.', { message0: '[ %1 ]', args0: [txt('ITEMS', '"red", "green", "blue"')], output: null }),
+    def('py_list_empty', 'arrays', 'An empty array.', { message0: '[ ]', output: null }),
+    def('py_list_fill', 'arrays', 'A fixed-size array: n copies of the same starting value.', { message0: '[ %1 ] * %2', args0: [val('V'), val('N')], output: null }),
+    def('py_grid', 'arrays', 'A 2D array with rows and columns, every cell holding the same starting value.', { message0: '2D array  rows %1 columns %2 filled with %3', args0: [val('R'), val('C'), val('V')], output: null }),
+    def('py_index2', 'arrays', 'One cell of a 2D array: [row][column].', { message0: '%1 [ %2 ][ %3 ]', args0: [val('S'), val('R'), val('C')], output: null }),
+    def('py_setitem', 'arrays', 'Change one item of an array.', merge(STMT, { message0: '%1 [ %2 ] = %3', args0: [varf('VAR', 'items'), val('I'), val('V')] })),
+    def('py_setitem2', 'arrays', 'Change one cell of a 2D array: [row][column].', merge(STMT, { message0: '%1 [ %2 ][ %3 ] = %4', args0: [varf('VAR', 'grid'), val('R'), val('C'), val('V')] })),
+    def('py_append', 'arrays', 'Add an item to the end of an array.', merge(STMT, { message0: '%1 .append( %2 )', args0: [varf('VAR', 'items'), val('V')] })),
+
+    /* selection */
+    def('py_if', 'select', 'Selection: run the blocks inside only if the condition is True.', merge(STMT, { message0: 'if %1 :', args0: [val('C')], message1: '%1', args1: [body('DO')] })),
+    def('py_ifelse', 'select', 'Selection with two branches.', merge(STMT, { message0: 'if %1 :', args0: [val('C')], message1: '%1', args1: [body('DO')], message2: 'else:', message3: '%1', args3: [body('EL')] })),
+    def('py_ifelifelse', 'select', 'Selection with three branches.', merge(STMT, { message0: 'if %1 :', args0: [val('C1')], message1: '%1', args1: [body('DO1')], message2: 'elif %1 :', args2: [val('C2')], message3: '%1', args3: [body('DO2')], message4: 'else:', message5: '%1', args5: [body('EL')] })),
+    def('py_elif', 'select', 'Another condition to try. Snap it directly under an if or elif block.', merge(STMT, { message0: 'elif %1 :', args0: [val('C')], message1: '%1', args1: [body('DO')] })),
+    def('py_else', 'select', 'What to do when no condition was True. Snap it directly under an if or elif block.', merge(STMT, { message0: 'else:', message1: '%1', args1: [body('DO')] })),
+
+    /* iteration */
+    def('py_for1', 'loops', 'Count-controlled loop: counts from 0 and stops before the number.', merge(STMT, { message0: 'for %1 in range( %2 ):', args0: [varf('VAR', 'i'), val('B')], message1: '%1', args1: [body('DO')] })),
+    def('py_for2', 'loops', 'Count-controlled loop: counts from the first number and stops before the second.', merge(STMT, { message0: 'for %1 in range( %2 , %3 ):', args0: [varf('VAR', 'i'), val('A'), val('B')], message1: '%1', args1: [body('DO')] })),
+    def('py_for3', 'loops', 'Count-controlled loop with a step. Use a negative step to count down.', merge(STMT, { message0: 'for %1 in range( %2 , %3 , %4 ):', args0: [varf('VAR', 'i'), val('A'), val('B'), val('S')], message1: '%1', args1: [body('DO')] })),
+    def('py_foreach', 'loops', 'Visit each item of an array, each character of a string, or each line of a file.', merge(STMT, { message0: 'for %1 in %2 :', args0: [varf('VAR', 'item'), val('S')], message1: '%1', args1: [body('DO')] })),
+    def('py_while', 'loops', 'Condition-controlled loop: repeats while the condition is True.', merge(STMT, { message0: 'while %1 :', args0: [val('C')], message1: '%1', args1: [body('DO')] })),
+
+    /* sub programs */
+    def('py_def_proc', 'subs', 'Define a procedure: a named block of code that does a job. Leave the brackets empty for no parameters.', merge(STMT, { message0: 'def %1 ( %2 ):', args0: [txt('NAME', 'showMenu'), txt('PARAMS', '')], message1: '%1', args1: [body('BODY')], extensions: ['pb_subprogram'] })),
+    def('py_def_func', 'subs', 'Define a function: a sub program that returns a value. Leave the brackets empty for no parameters.', merge(STMT, { message0: 'def %1 ( %2 ):', args0: [txt('NAME', 'area'), txt('PARAMS', 'width, height')], message1: '%1', args1: [body('BODY')], message2: 'return %1', args2: [val('RET')], extensions: ['pb_subprogram'] })),
+    def('py_return', 'subs', 'Send a value back and leave the function straight away.', { message0: 'return %1', args0: [val('V')], previousStatement: null }),
+    def('py_name', 'subs', 'A parameter: type the same name you wrote inside the brackets of def.', { message0: '%1', args0: [txt('NAME', 'width')], output: null, extensions: ['pb_identifier'] }),
+    def('py_call0', 'subs', 'Call a procedure with no arguments.', merge(STMT, { message0: '%1 ( )', args0: [txt('NAME', 'showMenu')], extensions: ['pb_identifier'] })),
+    def('py_call1', 'subs', 'Call a procedure with one argument.', merge(STMT, { message0: '%1 ( %2 )', args0: [txt('NAME', 'greet'), val('A')], extensions: ['pb_identifier'] })),
+    def('py_call2', 'subs', 'Call a procedure with two arguments.', merge(STMT, { message0: '%1 ( %2 , %3 )', args0: [txt('NAME', 'greet'), val('A'), val('B')], extensions: ['pb_identifier'] })),
+    def('py_fcall0', 'subs', 'Call a function with no arguments and use the value it returns.', { message0: '%1 ( )', args0: [txt('NAME', 'rollDice')], output: null, extensions: ['pb_identifier'] }),
+    def('py_fcall1', 'subs', 'Call a function with one argument and use the value it returns.', { message0: '%1 ( %2 )', args0: [txt('NAME', 'double'), val('A')], output: null, extensions: ['pb_identifier'] }),
+    def('py_fcall2', 'subs', 'Call a function with two arguments and use the value it returns.', { message0: '%1 ( %2 , %3 )', args0: [txt('NAME', 'area'), val('A'), val('B')], output: null, extensions: ['pb_identifier'] }),
+
+    /* files */
+    def('py_open', 'files', 'Open a text file. "r" reads, "w" writes from empty, "a" adds to the end.', merge(STMT, { message0: '%1 = open( " %2 " , %3 )', args0: [varf('VAR', 'myFile'), txt('FN', 'scores.txt'), dd('MODE', [['"r"  read', 'r'], ['"w"  write', 'w'], ['"a"  append', 'a']])] })),
+    def('py_readline', 'files', 'Read the next line of the file. Gives "" at the end of the file.', { message0: '%1 .readline()', args0: [varf('VAR', 'myFile')], output: null }),
+    def('py_read', 'files', 'Read the whole file as one string.', { message0: '%1 .read()', args0: [varf('VAR', 'myFile')], output: null }),
+    def('py_write', 'files', 'Write a string to the file. End it with \\n to finish the line.', merge(STMT, { message0: '%1 .write( %2 )', args0: [varf('VAR', 'myFile'), val('V')] })),
+    def('py_close', 'files', 'Close the file when you have finished with it.', merge(STMT, { message0: '%1 .close()', args0: [varf('VAR', 'myFile')] })),
+
+    /* libraries */
+    def('py_import', 'random', 'Bring in a library. Put this at the top of the program.', merge(STMT, { message0: 'import %1', args0: [dd('LIB', [['random', 'random'], ['time', 'time']])] })),
+    def('py_randint', 'random', 'A random whole number. Both ends are included.', { message0: 'random.randint( %1 , %2 )', args0: [val('A'), val('B')], output: null }),
+    def('py_uniform', 'random', 'A random real number between two values.', { message0: 'random.uniform( %1 , %2 )', args0: [val('A'), val('B')], output: null }),
+    def('py_sleep', 'random', 'Pause the program for a number of seconds.', merge(STMT, { message0: 'time.sleep( %1 )', args0: [val('S')] })),
+
+    /* comments */
+    def('py_comment', 'comment', 'A note for people reading the code. Python ignores it.', merge(STMT, { message0: '# %1', args0: [txt('TEXT', 'explain this part')] }))
+  ];
+
+  function identifier(v) {
+    v = String(v).trim().replace(/\s+/g, '_').replace(/[^A-Za-z0-9_]/g, '');
+    if (/^[0-9]/.test(v)) v = '_' + v;
+    return v || null;
+  }
+  function paramList(v) {
+    return String(v).split(',').map(function (p) { return identifier(p) || ''; })
+      .filter(function (p) { return p; }).join(', ');
+  }
+
+  var defined = false;
+  function defineAll() {
+    if (defined) return; defined = true;
+    var X = Blockly.Extensions;
+    X.register('pb_number', function () {
+      this.getField('N').setValidator(function (v) {
+        v = String(v).trim();
+        return /^-?\d+(\.\d+)?$/.test(v) ? v : null;
+      });
+    });
+    X.register('pb_start', function () { this.setFieldValue(PHRASE, 'PHRASE'); });
+    X.register('pb_identifier', function () { this.getField('NAME').setValidator(identifier); });
+    X.register('pb_subprogram', function () {
+      this.getField('NAME').setValidator(identifier);
+      this.getField('PARAMS').setValidator(paramList);
+    });
+    Blockly.common.defineBlocksWithJsonArray(DEFS);
+    defineGenerators();
+  }
+
+  /* ---------------------------------------------------------------
+     Python generators
+     --------------------------------------------------------------- */
+  var BLANK = '___';           // shown where a slot has been left empty
+  function defineGenerators() {
+    var G = pg.forBlock;
+    pg.INDENT = '    ';
+    // Python does not declare variables, so drop Blockly's "x = None" header.
+    var init = pg.init;
+    pg.init = function (ws) { init.call(this, ws); delete this.definitions_['variables']; };
+
+    function v(b, n, o) { return pg.valueToCode(b, n, o === undefined ? Order.NONE : o) || BLANK; }
+    function s(b, n) { return pg.statementToCode(b, n) || pg.INDENT + 'pass\n'; }
+    function name(b, f) { return pg.getVariableName(b.getFieldValue(f || 'VAR')); }
+    function str(t) { return '"' + String(t).replace(/"/g, '\\"') + '"'; }
+
+    G.py_start = function () { return ''; };
+    G.py_print = function (b) { return 'print(' + (pg.valueToCode(b, 'V', Order.NONE) || '') + ')\n'; };
+    G.py_print2 = function (b) { return 'print(' + v(b, 'A') + ', ' + v(b, 'B') + ')\n'; };
+    G.py_input = function (b) { return ['input(' + (pg.valueToCode(b, 'P', Order.NONE) || '') + ')', Order.FUNCTION_CALL]; };
+
+    G.py_text = function (b) { return [str(b.getFieldValue('T')), Order.ATOMIC]; };
+    G.py_num = function (b) { var n = b.getFieldValue('N'); return [n, n.charAt(0) === '-' ? Order.UNARY_SIGN : Order.ATOMIC]; };
+    G.py_bool = function (b) { return [b.getFieldValue('B'), Order.ATOMIC]; };
+
+    G.py_set = function (b) { return name(b) + ' = ' + v(b, 'V') + '\n'; };
+    G.py_get = function (b) { return [name(b), Order.ATOMIC]; };
+    G.py_const = function (b) { return name(b) + ' = ' + v(b, 'V') + '  # constant\n'; };
+    G.py_global = function (b) { return 'global ' + name(b) + '\n'; };
+
+    var AO = { '+': Order.ADDITIVE, '-': Order.ADDITIVE, '*': Order.MULTIPLICATIVE, '/': Order.MULTIPLICATIVE, '//': Order.MULTIPLICATIVE, '%': Order.MULTIPLICATIVE, '**': Order.EXPONENTIATION };
+    // Keep brackets only where they change the answer: a + b + c, but a - (b - c).
+    pg.ORDER_OVERRIDES.push([Order.ADDITIVE, Order.ADDITIVE], [Order.MULTIPLICATIVE, Order.MULTIPLICATIVE], [Order.EXPONENTIATION, Order.EXPONENTIATION]);
+    G.py_arith = function (b) {
+      var op = b.getFieldValue('OP'), o = AO[op], rightAssoc = op === '**';
+      return [v(b, 'A', rightAssoc ? o + 0.5 : o) + ' ' + op + ' ' + v(b, 'B', rightAssoc ? o : o + 0.5), o];
+    };
+    G.py_compare = function (b) { var o = Order.RELATIONAL; return [v(b, 'A', o) + ' ' + b.getFieldValue('OP') + ' ' + v(b, 'B', o), o]; };
+    G.py_logic = function (b) { var op = b.getFieldValue('OP'), o = op === 'and' ? Order.LOGICAL_AND : Order.LOGICAL_OR; return [v(b, 'A', o) + ' ' + op + ' ' + v(b, 'B', o), o]; };
+    G.py_not = function (b) { return ['not ' + v(b, 'A', Order.LOGICAL_NOT), Order.LOGICAL_NOT]; };
+    G.py_round = function (b) { return ['round(' + v(b, 'X') + ', ' + v(b, 'N') + ')', Order.FUNCTION_CALL]; };
+    G.py_cast = function (b) { return [b.getFieldValue('FN') + '(' + v(b, 'V') + ')', Order.FUNCTION_CALL]; };
+
+    G.py_len = function (b) { return ['len(' + v(b, 'S') + ')', Order.FUNCTION_CALL]; };
+    G.py_method = function (b) { return [v(b, 'S', Order.MEMBER) + '.' + b.getFieldValue('M') + '()', Order.FUNCTION_CALL]; };
+    G.py_slice = function (b) { return [v(b, 'S', Order.MEMBER) + '[' + v(b, 'A') + ':' + v(b, 'B') + ']', Order.MEMBER]; };
+    G.py_left = function (b) { return [v(b, 'S', Order.MEMBER) + '[:' + v(b, 'N') + ']', Order.MEMBER]; };
+    G.py_right = function (b) { return [v(b, 'S', Order.MEMBER) + '[-' + v(b, 'N', Order.UNARY_SIGN) + ':]', Order.MEMBER]; };
+    G.py_index = function (b) { return [v(b, 'S', Order.MEMBER) + '[' + v(b, 'I') + ']', Order.MEMBER]; };
+    G.py_index2 = function (b) { return [v(b, 'S', Order.MEMBER) + '[' + v(b, 'R') + '][' + v(b, 'C') + ']', Order.MEMBER]; };
+    G.py_ord = function (b) { return ['ord(' + v(b, 'V') + ')', Order.FUNCTION_CALL]; };
+    G.py_chr = function (b) { return ['chr(' + v(b, 'V') + ')', Order.FUNCTION_CALL]; };
+    G.py_split = function (b) { return [v(b, 'S', Order.MEMBER) + '.split(' + v(b, 'SEP') + ')', Order.FUNCTION_CALL]; };
+
+    G.py_list = function (b) { return ['[' + b.getFieldValue('ITEMS') + ']', Order.ATOMIC]; };
+    G.py_list_empty = function () { return ['[]', Order.ATOMIC]; };
+    G.py_list_fill = function (b) { return ['[' + v(b, 'V') + '] * ' + v(b, 'N', Order.MULTIPLICATIVE), Order.MULTIPLICATIVE]; };
+    G.py_grid = function (b) { return ['[[' + v(b, 'V') + '] * ' + v(b, 'C', Order.MULTIPLICATIVE) + ' for _ in range(' + v(b, 'R') + ')]', Order.ATOMIC]; };
+    G.py_setitem = function (b) { return name(b) + '[' + v(b, 'I') + '] = ' + v(b, 'V') + '\n'; };
+    G.py_setitem2 = function (b) { return name(b) + '[' + v(b, 'R') + '][' + v(b, 'C') + '] = ' + v(b, 'V') + '\n'; };
+    G.py_append = function (b) { return name(b) + '.append(' + v(b, 'V') + ')\n'; };
+
+    G.py_if = function (b) { return 'if ' + v(b, 'C') + ':\n' + s(b, 'DO'); };
+    G.py_ifelse = function (b) { return 'if ' + v(b, 'C') + ':\n' + s(b, 'DO') + 'else:\n' + s(b, 'EL'); };
+    G.py_ifelifelse = function (b) { return 'if ' + v(b, 'C1') + ':\n' + s(b, 'DO1') + 'elif ' + v(b, 'C2') + ':\n' + s(b, 'DO2') + 'else:\n' + s(b, 'EL'); };
+    G.py_elif = function (b) { return 'elif ' + v(b, 'C') + ':\n' + s(b, 'DO'); };
+    G.py_else = function (b) { return 'else:\n' + s(b, 'DO'); };
+
+    G.py_for1 = function (b) { return 'for ' + name(b) + ' in range(' + v(b, 'B') + '):\n' + s(b, 'DO'); };
+    G.py_for2 = function (b) { return 'for ' + name(b) + ' in range(' + v(b, 'A') + ', ' + v(b, 'B') + '):\n' + s(b, 'DO'); };
+    G.py_for3 = function (b) { return 'for ' + name(b) + ' in range(' + v(b, 'A') + ', ' + v(b, 'B') + ', ' + v(b, 'S') + '):\n' + s(b, 'DO'); };
+    G.py_foreach = function (b) { return 'for ' + name(b) + ' in ' + v(b, 'S') + ':\n' + s(b, 'DO'); };
+    G.py_while = function (b) { return 'while ' + v(b, 'C') + ':\n' + s(b, 'DO'); };
+
+    G.py_def_proc = function (b) { return '\ndef ' + b.getFieldValue('NAME') + '(' + b.getFieldValue('PARAMS') + '):\n' + s(b, 'BODY') + '\n'; };
+    G.py_def_func = function (b) { return '\ndef ' + b.getFieldValue('NAME') + '(' + b.getFieldValue('PARAMS') + '):\n' + pg.statementToCode(b, 'BODY') + pg.INDENT + 'return ' + v(b, 'RET') + '\n\n'; };
+    G.py_return = function (b) { return 'return ' + v(b, 'V') + '\n'; };
+    G.py_name = function (b) { return [b.getFieldValue('NAME'), Order.ATOMIC]; };
+    function call(b, args) { return b.getFieldValue('NAME') + '(' + args.map(function (a) { return v(b, a); }).join(', ') + ')'; }
+    G.py_call0 = function (b) { return call(b, []) + '\n'; };
+    G.py_call1 = function (b) { return call(b, ['A']) + '\n'; };
+    G.py_call2 = function (b) { return call(b, ['A', 'B']) + '\n'; };
+    G.py_fcall0 = function (b) { return [call(b, []), Order.FUNCTION_CALL]; };
+    G.py_fcall1 = function (b) { return [call(b, ['A']), Order.FUNCTION_CALL]; };
+    G.py_fcall2 = function (b) { return [call(b, ['A', 'B']), Order.FUNCTION_CALL]; };
+
+    G.py_open = function (b) { return name(b) + ' = open(' + str(b.getFieldValue('FN')) + ', "' + b.getFieldValue('MODE') + '")\n'; };
+    G.py_readline = function (b) { return [name(b) + '.readline()', Order.FUNCTION_CALL]; };
+    G.py_read = function (b) { return [name(b) + '.read()', Order.FUNCTION_CALL]; };
+    G.py_write = function (b) { return name(b) + '.write(' + v(b, 'V') + ')\n'; };
+    G.py_close = function (b) { return name(b) + '.close()\n'; };
+
+    G.py_import = function (b) { return 'import ' + b.getFieldValue('LIB') + '\n'; };
+    G.py_randint = function (b) { return ['random.randint(' + v(b, 'A') + ', ' + v(b, 'B') + ')', Order.FUNCTION_CALL]; };
+    G.py_uniform = function (b) { return ['random.uniform(' + v(b, 'A') + ', ' + v(b, 'B') + ')', Order.FUNCTION_CALL]; };
+    G.py_sleep = function (b) { return 'time.sleep(' + v(b, 'S') + ')\n'; };
+    G.py_comment = function (b) { return '# ' + b.getFieldValue('TEXT') + '\n'; };
+  }
+
+  /** Python for a workspace, tidied: no leading blank lines, no runs of 3+ newlines. */
+  function codeOf(ws) {
+    // With a start block on the workspace only the stacks under start blocks count (like Scratch);
+    // without one, every stack counts, so older saved work still runs.
+    var starts = ws.getBlocksByType('py_start', true), raw;
+    if (starts.length) {
+      pg.init(ws);
+      raw = pg.finish(starts.map(function (b) { return pg.blockToCode(b); }).join('\n'));
+    } else raw = pg.workspaceToCode(ws);
+    return raw.replace(/\n{3,}/g, '\n\n').replace(/^\n+/, '').replace(/\s+$/, '') + '\n';
+  }
+  /** Python for a saved program (used by the help panel and the tests). */
+  function codeFor(state) {
+    var ws = new Blockly.Workspace();
+    try { Blockly.serialization.workspaces.load(state, ws); return codeOf(ws).replace(/^\n$/, ''); }
+    finally { ws.dispose(); }
+  }
+
+  /* ---------------------------------------------------------------
+     Toolbox
+     --------------------------------------------------------------- */
+  function sh(type, fields) { return { shadow: { type: type, fields: fields } }; }
+  function N(n) { return sh('py_num', { N: String(n) }); }
+  function T(t) { return sh('py_text', { T: t }); }
+  function B(type, inputs, fields) { var o = { kind: 'block', type: type }; if (inputs) o.inputs = inputs; if (fields) o.fields = fields; return o; }
+  function L(text) { return { kind: 'label', text: text }; }
+  function cat(nm, colour, contents) { return { kind: 'category', name: nm, colour: colour, contents: contents }; }
+
+  var TOOLBOX = {
+    kind: 'categoryToolbox',
+    contents: [
+      cat('Start', START_COLOUR, [B('py_start')]),
+      cat('Input and output', COL.io, [B('py_print', { V: T('Hello world') }), B('py_print2', { A: T('Score:'), B: N(10) }), B('py_input', { P: T('What is your name? ') }), B('py_comment')]),
+      { kind: 'category', name: 'Variables', colour: COL.vars, custom: 'PB_VARIABLES' },
+      cat('Values', COL.values, [B('py_text'), B('py_num'), B('py_num', null, { N: '3.5' }), B('py_bool')]),
+      cat('Casting', COL.cast, [B('py_cast', { V: { block: { type: 'py_input', inputs: { P: T('How old are you? ') } } } }, { FN: 'int' }), B('py_cast', null, { FN: 'float' }), B('py_cast', null, { FN: 'str' }), B('py_cast', null, { FN: 'bool' })]),
+      cat('Operators', COL.ops, [
+        L('Arithmetic'), B('py_arith', { A: N(7), B: N(2) }), B('py_arith', { A: N(7), B: N(2) }, { OP: '//' }), B('py_arith', { A: N(7), B: N(2) }, { OP: '%' }), B('py_arith', { A: N(7), B: N(2) }, { OP: '**' }), B('py_round', { N: N(2) }),
+        L('Comparison'), B('py_compare', { B: N(0) }), B('py_compare', { B: N(0) }, { OP: '>=' }),
+        L('Boolean'), B('py_logic'), B('py_logic', null, { OP: 'or' }), B('py_not')]),
+      { kind: 'sep' },
+      cat('Selection', COL.select, [B('py_if'), B('py_ifelse'), B('py_ifelifelse'), L('Extra branches: snap under an if'), B('py_elif'), B('py_else')]),
+      cat('Iteration', COL.loops, [L('Count-controlled'), B('py_for1', { B: N(5) }), B('py_for2', { A: N(1), B: N(11) }), B('py_for3', { A: N(10), B: N(0), S: N(-1) }), B('py_foreach'), L('Condition-controlled'), B('py_while')]),
+      { kind: 'sep' },
+      cat('Strings', COL.strings, [B('py_arith', { A: T('Hello '), B: T('world') }), B('py_len'), B('py_method'), B('py_method', null, { M: 'lower' }), B('py_slice', { A: N(0), B: N(3) }), B('py_left', { N: N(3) }), B('py_right', { N: N(3) }), B('py_index', { I: N(0) }), B('py_ord', { V: T('A') }), B('py_chr', { V: N(97) }), B('py_split', { SEP: T(',') }), B('py_method', null, { M: 'strip' }), B('py_method', null, { M: 'isdigit' })]),
+      cat('Arrays', COL.arrays, [L('One-dimensional'), B('py_list'), B('py_list_fill', { V: N(0), N: N(5) }), B('py_list_empty'), B('py_index', { I: N(0) }), B('py_setitem', { I: N(0) }), B('py_len'), B('py_append'), B('py_foreach'), L('Two-dimensional'), B('py_grid', { R: N(3), C: N(3), V: N(0) }), B('py_index2', { R: N(0), C: N(0) }), B('py_setitem2', { R: N(0), C: N(0) })]),
+      cat('Sub programs', COL.subs, [
+        L('Procedures'), B('py_def_proc'), B('py_def_proc', null, { NAME: 'greet', PARAMS: 'name' }), B('py_call0'), B('py_call1'), B('py_call2'),
+        L('Functions'), B('py_def_func', null, { NAME: 'rollDice', PARAMS: '' }), B('py_def_func'), B('py_fcall0'), B('py_fcall1'), B('py_fcall2'), B('py_return'),
+        L('Parameters'), B('py_name')]),
+      cat('Files', COL.files, [B('py_open', null, { MODE: 'w' }), B('py_write', { V: T('Ana,12\\n') }), B('py_close'), B('py_open', null, { FN: 'names.txt', MODE: 'r' }), B('py_readline'), B('py_read')]),
+      cat('Random and time', COL.random, [B('py_import'), B('py_randint', { A: N(1), B: N(6) }), B('py_uniform', { A: N(0), B: N(1) }), B('py_import', null, { LIB: 'time' }), B('py_sleep', { S: N(1) })])
+    ]
+  };
+
+  /** Contents of the Variables category, rebuilt each time it opens. */
+  function variablesFlyout(ws) {
+    var vars = ws.getVariableMap().getAllVariables();
+    var out = [{ kind: 'button', text: 'Make a variable', callbackKey: 'PB_NEW_VARIABLE' }];
+    var last = vars.length ? { VAR: { id: vars[vars.length - 1].getId() } } : null;
+    out.push(B('py_set', null, last), B('py_const'), B('py_global', null, last));
+    vars.slice().sort(function (a, b) { return a.getName().localeCompare(b.getName()); })
+      .forEach(function (vm) { out.push(B('py_get', null, { VAR: { id: vm.getId() } })); });
+    return out;
+  }
+
+  var BLOCK_STYLES = {}, k;
+  for (k in COL) BLOCK_STYLES[k] = { colourPrimary: COL[k] };
+  BLOCK_STYLES.start = { colourPrimary: START_COLOUR, colourSecondary: '#2A3D66', colourTertiary: '#FFD23F', hat: 'cap' };
+
+  /* ---------------------------------------------------------------
+     Program builder: a tiny DSL so examples stay readable.
+     Statement lists are arrays; they are chained top to bottom.
+     --------------------------------------------------------------- */
+  function mk(type, fields, inputs) {
+    var b = { type: type }, n;
+    if (fields) b.fields = fields;
+    if (inputs) { b.inputs = {}; for (n in inputs) if (inputs[n]) b.inputs[n] = { block: Array.isArray(inputs[n]) ? chain(inputs[n]) : inputs[n] }; }
+    return b;
+  }
+  function chain(list) { for (var i = list.length - 2; i >= 0; i--) list[i].next = { block: list[i + 1] }; return list[0]; }
+  function V(nm) { return { VAR: { name: nm } }; }
+  function lit(x) { return typeof x === 'number' ? D.n(x) : typeof x === 'string' ? D.t(x) : x; }
+
+  var D = {
+    t: function (s) { return mk('py_text', { T: s }); },
+    n: function (n) { return mk('py_num', { N: String(n) }); },
+    bool: function (b) { return mk('py_bool', { B: b ? 'True' : 'False' }); },
+    v: function (nm) { return mk('py_get', V(nm)); },
+    p: function (nm) { return mk('py_name', { NAME: nm }); },
+    set: function (nm, x) { return mk('py_set', V(nm), { V: lit(x) }); },
+    konst: function (nm, x) { return mk('py_const', V(nm), { V: lit(x) }); },
+    glob: function (nm) { return mk('py_global', V(nm)); },
+    pr: function (x) { return mk('py_print', null, { V: lit(x) }); },
+    pr2: function (a, b) { return mk('py_print2', null, { A: lit(a), B: lit(b) }); },
+    inp: function (prompt) { return mk('py_input', null, { P: D.t(prompt) }); },
+    cm: function (s) { return mk('py_comment', { TEXT: s }); },
+    op: function (a, o, b) { return mk('py_arith', { OP: o }, { A: lit(a), B: lit(b) }); },
+    cmp: function (a, o, b) { return mk('py_compare', { OP: o }, { A: lit(a), B: lit(b) }); },
+    lg: function (a, o, b) { return mk('py_logic', { OP: o }, { A: a, B: b }); },
+    not: function (a) { return mk('py_not', null, { A: a }); },
+    round: function (x, n) { return mk('py_round', null, { X: x, N: lit(n) }); },
+    cast: function (fn, x) { return mk('py_cast', { FN: fn }, { V: lit(x) }); },
+    len: function (x) { return mk('py_len', null, { S: x }); },
+    meth: function (x, m) { return mk('py_method', { M: m }, { S: x }); },
+    slice: function (x, a, b) { return mk('py_slice', null, { S: x, A: lit(a), B: lit(b) }); },
+    left: function (x, n) { return mk('py_left', null, { S: x, N: lit(n) }); },
+    right: function (x, n) { return mk('py_right', null, { S: x, N: lit(n) }); },
+    idx: function (x, i) { return mk('py_index', null, { S: x, I: lit(i) }); },
+    idx2: function (x, r, c) { return mk('py_index2', null, { S: x, R: lit(r), C: lit(c) }); },
+    ord: function (x) { return mk('py_ord', null, { V: lit(x) }); },
+    chr: function (x) { return mk('py_chr', null, { V: lit(x) }); },
+    split: function (x, sep) { return mk('py_split', null, { S: x, SEP: D.t(sep) }); },
+    list: function (items) { return mk('py_list', { ITEMS: items }); },
+    empty: function () { return mk('py_list_empty'); },
+    fill: function (x, n) { return mk('py_list_fill', null, { V: lit(x), N: lit(n) }); },
+    grid: function (r, c, x) { return mk('py_grid', null, { R: lit(r), C: lit(c), V: lit(x) }); },
+    seti: function (nm, i, x) { return mk('py_setitem', V(nm), { I: lit(i), V: lit(x) }); },
+    seti2: function (nm, r, c, x) { return mk('py_setitem2', V(nm), { R: lit(r), C: lit(c), V: lit(x) }); },
+    app: function (nm, x) { return mk('py_append', V(nm), { V: lit(x) }); },
+    iff: function (c, d) { return mk('py_if', null, { C: c, DO: d }); },
+    ife: function (c, d, e) { return mk('py_ifelse', null, { C: c, DO: d, EL: e }); },
+    ifee: function (c1, d1, c2, d2, e) { return mk('py_ifelifelse', null, { C1: c1, DO1: d1, C2: c2, DO2: d2, EL: e }); },
+    elif: function (c, d) { return mk('py_elif', null, { C: c, DO: d }); },
+    els: function (d) { return mk('py_else', null, { DO: d }); },
+    for1: function (nm, b, d) { return mk('py_for1', V(nm), { B: lit(b), DO: d }); },
+    for2: function (nm, a, b, d) { return mk('py_for2', V(nm), { A: lit(a), B: lit(b), DO: d }); },
+    for3: function (nm, a, b, st, d) { return mk('py_for3', V(nm), { A: lit(a), B: lit(b), S: lit(st), DO: d }); },
+    each: function (nm, x, d) { return mk('py_foreach', V(nm), { S: x, DO: d }); },
+    wh: function (c, d) { return mk('py_while', null, { C: c, DO: d }); },
+    proc: function (nm, params, d) { return mk('py_def_proc', { NAME: nm, PARAMS: params }, { BODY: d }); },
+    func: function (nm, params, d, r) { return mk('py_def_func', { NAME: nm, PARAMS: params }, { BODY: d && d.length ? d : null, RET: lit(r) }); },
+    ret: function (x) { return mk('py_return', null, { V: lit(x) }); },
+    call: function (nm, a, b) { var k = arguments.length - 1; return mk('py_call' + k, { NAME: nm }, k === 0 ? null : k === 1 ? { A: lit(a) } : { A: lit(a), B: lit(b) }); },
+    fcall: function (nm, a, b) { var k = arguments.length - 1; return mk('py_fcall' + k, { NAME: nm }, k === 0 ? null : k === 1 ? { A: lit(a) } : { A: lit(a), B: lit(b) }); },
+    fopen: function (nm, fn, mode) { var f = V(nm); f.FN = fn; f.MODE = mode; return mk('py_open', f); },
+    fwrite: function (nm, x) { return mk('py_write', V(nm), { V: lit(x) }); },
+    fclose: function (nm) { return mk('py_close', V(nm)); },
+    freadline: function (nm) { return mk('py_readline', V(nm)); },
+    fread: function (nm) { return mk('py_read', V(nm)); },
+    imp: function (lib) { return mk('py_import', { LIB: lib }); },
+    randint: function (a, b) { return mk('py_randint', null, { A: lit(a), B: lit(b) }); },
+    sleep: function (x) { return mk('py_sleep', null, { S: lit(x) }); }
+  };
+
+  /** Turn a list of statements into a saved workspace. */
+  function program(statements) {
+    var top = chain([mk('py_start')].concat(statements)); top.x = 24; top.y = 24;
+    return { blocks: { languageVersion: 0, blocks: [top] } };
+  }
+
+  return { PHRASE: PHRASE, COL: COL, BLANK: BLANK, BLOCK_STYLES: BLOCK_STYLES, TOOLBOX: TOOLBOX, D: D, program: program,
+    defineAll: defineAll, codeOf: codeOf, codeFor: codeFor, variablesFlyout: variablesFlyout };
+}
+
+/* =====================================================================
+   2. CONTENT — help topics and examples
+   Each program is written with the builder (D) so the blocks, the Python
+   shown in the help panel and the code that runs can never disagree.
+   To add your own: copy an entry, change the text, change the blocks.
+   ===================================================================== */
+function PB_content(core) {
+  var D = core.D, C = core.COL, P = core.program;
+  var t = D.t, n = D.n, v = D.v, p = D.p, set = D.set, pr = D.pr, pr2 = D.pr2, inp = D.inp, op = D.op, cmp = D.cmp, cast = D.cast;
+  function say() { // "a" + b + "c" ... joined left to right
+    var parts = Array.prototype.slice.call(arguments), e = parts[0];
+    for (var i = 1; i < parts.length; i++) e = op(e, '+', parts[i]);
+    return e;
+  }
+
+  /* ------------------------------------------------------------------
+     HELP: what it does, Python (made from the blocks), OCR reference
+     language, a thing to watch out for, and where the blocks live.
+     ------------------------------------------------------------------ */
+  var HELP = [
+    { group: 'Storing and showing data', topics: [
+      { id: 'variables', title: 'Variables', sub: 'declare and assign', colour: C.vars, where: 'Variables',
+        what: ['A variable is a named place in memory that holds a value. The value can change while the program runs.', 'Python has no separate declaration. A variable is created the first time you assign to it with =.'],
+        blocks: [set('score', 0), set('name', 'Ada'), set('score', op(v('score'), '+', 10)), pr(v('name')), pr(v('score'))],
+        erl: 'score = 0\nname = "Ada"\nscore = score + 10\nprint(name)\nprint(score)',
+        note: 'Choose names that say what is stored, with no spaces. Python is case sensitive, so Score and score are two different variables.' },
+      { id: 'constants', title: 'Constants', sub: 'values that must not change', colour: C.vars, where: 'Variables',
+        what: ['A constant is a named value that stays the same for the whole program, such as a VAT rate or the number of lives in a game.', 'Python has no const keyword. Programmers write the name in CAPITALS to tell everyone to leave it alone. The const block does this for you and labels it in the code.'],
+        blocks: [D.konst('VAT', 0.2), set('price', 50), set('total', op(v('price'), '+', op(v('price'), '*', v('VAT')))), pr(v('total'))],
+        erl: 'const vat = 0.2\nprice = 50\ntotal = price + price * vat\nprint(total)',
+        note: 'If you try to assign a new value to a constant later on, this tool puts a warning on the block.' },
+      { id: 'input', title: 'Input', sub: 'get data from the user', colour: C.io, where: 'Input and output',
+        what: ['input() shows a prompt, waits for the user to type, and gives back what they typed. Store the result in a variable.'],
+        blocks: [set('name', inp('What is your name? ')), pr(say('Hello ', v('name')))],
+        erl: 'name = input("What is your name? ")\nprint("Hello " + name)',
+        note: 'input() always gives back a string. Wrap it in int() or float() when you need a number: see Casting.' },
+      { id: 'output', title: 'Output', sub: 'show data on screen', colour: C.io, where: 'Input and output',
+        what: ['print() displays a value: text, a number, a variable, or the answer to a calculation.'],
+        blocks: [pr('Hello world'), set('score', 10), pr2('Score:', v('score')), pr(say('You scored ', cast('str', v('score'))))],
+        erl: 'print("Hello world")\nscore = 10\nprint("Score: " + str(score))',
+        note: 'Joining text to a number with + needs str() around the number. Giving print two values with a comma avoids the cast and adds a space for you.' },
+      { id: 'datatypes', title: 'Data types', sub: 'integer, real, Boolean, character, string', colour: C.values, where: 'Values',
+        what: ['Every value has a data type, which decides what you can do with it.'],
+        table: { head: ['Type', 'Holds', 'Example'], code: [2], rows: [['integer', 'a whole number', '15'], ['real (float)', 'a number with a decimal part', '1.68'], ['Boolean', 'True or False', 'True'], ['character', 'one letter, digit or symbol', '"J"'], ['string', 'text: any number of characters', '"Jersey"']] },
+        blocks: [set('age', 15), set('height', 1.68), set('member', D.bool(true)), set('initial', 'J'), set('town', 'St Helier'), pr(op(v('age'), '+', 1)), pr(op(v('town'), '+', '!'))],
+        erl: 'age = 15\nheight = 1.68\nmember = True\ninitial = "J"\ntown = "St Helier"\nprint(age + 1)\nprint(town + "!")',
+        note: 'Python has no separate character type: a character is a string of length 1. Python calls a real number a float.' },
+      { id: 'casting', title: 'Casting', sub: 'convert between data types', colour: C.cast, where: 'Casting',
+        what: ['Casting converts a value from one data type to another. You need it most often to turn typed input into a number, and to turn a number back into text for a message.'],
+        table: { head: ['Python', 'Result'], rows: [['int("3")', '3'], ['float("4.52")', '4.52'], ['str(345)', '"345"'], ['bool(1)', 'True']] },
+        blocks: [set('age', cast('int', inp('How old are you? '))), set('nextAge', op(v('age'), '+', 1)), pr(say('Next year you will be ', cast('str', v('nextAge'))))],
+        erl: 'age = int(input("How old are you? "))\nnextAge = age + 1\nprint("Next year you will be " + str(nextAge))',
+        note: 'int("hello") stops the program with a ValueError, because the text is not a whole number. OCR\'s language also accepts real() in place of float().' },
+      { id: 'comments', title: 'Comments', sub: 'notes for humans', colour: C.comment, where: 'Input and output',
+        what: ['A comment explains what part of a program does. Python ignores everything after a # on that line.'],
+        blocks: [D.cm('work out the area of a rectangle'), set('area', op(4, '*', 3)), pr(v('area'))],
+        erl: '// work out the area of a rectangle\narea = 4 * 3\nprint(area)',
+        note: 'OCR\'s language starts a comment with //. In Python, // means integer division, so use #.' }
+    ] },
+    { group: 'Operators', topics: [
+      { id: 'arithmetic', title: 'Arithmetic operators', sub: 'including MOD, DIV and powers', colour: C.ops, where: 'Operators',
+        what: ['Arithmetic operators do calculations. Three of them are written differently in Python and in the exam.'],
+        table: { head: ['Python', 'OCR', 'Meaning'], rows: [['+  -  *  /', '+  -  *  /', 'add, subtract, multiply, divide'], ['//', 'DIV', 'integer division: how many whole times it goes'], ['%', 'MOD', 'modulus: the remainder'], ['**', '^', 'exponent: to the power of']] },
+        blocks: [set('a', 17), set('b', 5), pr(op(v('a'), '/', v('b'))), pr(op(v('a'), '//', v('b'))), pr(op(v('a'), '%', v('b'))), pr(op(v('a'), '**', 2))],
+        erl: 'a = 17\nb = 5\nprint(a / b)      // 3.4\nprint(a DIV b)    // 3\nprint(a MOD b)    // 2\nprint(a ^ 2)      // 289',
+        note: 'number % 2 == 0 is the classic test for an even number. / always gives a real, even for 10 / 2.' },
+      { id: 'comparison', title: 'Comparison operators', sub: 'questions that answer True or False', colour: C.ops, where: 'Operators',
+        what: ['A comparison asks a question about two values. The answer is always a Boolean: True or False. Conditions in if and while are built from them.'],
+        table: { head: ['Operator', 'Meaning'], rows: [['==', 'equal to'], ['!=', 'not equal to'], ['<', 'less than'], ['<=', 'less than or equal to'], ['>', 'greater than'], ['>=', 'greater than or equal to']] },
+        blocks: [set('mark', 65), pr(cmp(v('mark'), '>=', 40)), pr(cmp(v('mark'), '==', 100))],
+        erl: 'mark = 65\nprint(mark >= 40)     // True\nprint(mark == 100)    // False',
+        note: 'One = stores a value. Two == asks whether two values are the same.' },
+      { id: 'boolean', title: 'Boolean operators', sub: 'and, or, not', colour: C.ops, where: 'Operators',
+        what: ['Boolean operators join conditions together.'],
+        table: { head: ['Python', 'OCR', 'True when'], rows: [['and', 'AND', 'both conditions are True'], ['or', 'OR', 'at least one condition is True'], ['not', 'NOT', 'the condition is False']] },
+        blocks: [set('age', 15), set('hasTicket', D.bool(true)), D.ife(D.lg(cmp(v('age'), '>=', 12), 'and', v('hasTicket')), [pr('Enjoy the film')], [pr('Sorry, you cannot go in')])],
+        erl: 'age = 15\nhasTicket = True\nif age >= 12 AND hasTicket then\n    print("Enjoy the film")\nelse\n    print("Sorry, you cannot go in")\nendif',
+        note: 'Python\'s operators are lower case. Writing AND in Python is an error.' }
+    ] },
+    { group: 'The three programming constructs', topics: [
+      { id: 'sequence', title: 'Sequence', sub: 'one instruction after another', colour: C.io, where: 'Input and output',
+        what: ['Instructions run one at a time, from top to bottom. The order matters: a variable must be given a value before it is used.'],
+        blocks: [set('width', 4), set('height', 3), set('area', op(v('width'), '*', v('height'))), pr(v('area'))],
+        erl: 'width = 4\nheight = 3\narea = width * height\nprint(area)',
+        note: 'Drag the print block to the top of the stack and run it: you get a NameError because area does not exist yet.' },
+      { id: 'selection', title: 'Selection', sub: 'if, elif, else', colour: C.select, where: 'Selection',
+        what: ['Selection chooses which instructions to run. Python tests each condition in turn and runs the first branch that is True. else catches everything that is left.'],
+        blocks: [set('temp', cast('int', inp('Temperature? '))), D.ifee(cmp(v('temp'), '>', 25), [pr('Hot')], cmp(v('temp'), '>', 15), [pr('Mild')], [pr('Cold')])],
+        erl: 'temp = int(input("Temperature? "))\nif temp > 25 then\n    print("Hot")\nelseif temp > 15 then\n    print("Mild")\nelse\n    print("Cold")\nendif',
+        note: 'Need more branches? Snap extra elif blocks between the if and the else. OCR\'s language also has switch/case; in Python you use if and elif for the same job.' },
+      { id: 'for', title: 'Count-controlled iteration', sub: 'for loops', colour: C.loops, where: 'Iteration',
+        what: ['A for loop repeats a set number of times. The loop variable counts for you.'],
+        blocks: [D.for2('i', 1, 6, [pr(v('i'))]), pr('Done')],
+        erl: 'for i = 1 to 5\n    print(i)\nnext i\nprint("Done")',
+        note: 'range(1, 6) stops before 6, so it counts 1 to 5. In the exam, "for i = 1 to 5" includes the 5. To count down use a step: range(10, 0, -1) matches "for i = 10 to 1 step -1".' },
+      { id: 'while', title: 'Condition-controlled iteration', sub: 'while loops', colour: C.loops, where: 'Iteration',
+        what: ['A while loop repeats for as long as its condition is True. Use it when you cannot know in advance how many repeats you need.'],
+        blocks: [set('password', inp('Password: ')), D.wh(cmp(v('password'), '!=', 'python'), [set('password', inp('Try again: '))]), pr('Welcome')],
+        erl: 'password = input("Password: ")\nwhile password != "python"\n    password = input("Try again: ")\nendwhile\nprint("Welcome")',
+        note: 'Something inside the loop must be able to make the condition False, or it never ends. Press Stop if that happens. OCR also has do ... until, which checks at the end so the loop always runs once; Python has no do-until, so use while.' }
+    ] },
+    { group: 'Strings', topics: [
+      { id: 'strings', title: 'String manipulation', sub: 'length, substrings, case, ASCII', colour: C.strings, where: 'Strings',
+        what: ['Strings can be measured, cut up, joined and converted. Positions start at 0.'],
+        table: { head: ['Python', 'OCR', 'Gives'], rows: [['len(s)', 's.length', 'number of characters'], ['s[3:8]', 's.substring(3, 5)', '5 characters from position 3'], ['s[:4]', 's.left(4)', 'first 4 characters'], ['s[-3:]', 's.right(3)', 'last 3 characters'], ['s.upper()', 's.upper', 'capitals'], ['s.lower()', 's.lower', 'lower case'], ['a + b', 'a + b', 'concatenation (joining)'], ['ord("A")', 'ASC("A")', '65'], ['chr(97)', 'CHR(97)', '"a"']] },
+        blocks: [set('subject', 'ComputerScience'), pr(D.len(v('subject'))), pr(D.slice(v('subject'), 3, 8)), pr(D.left(v('subject'), 4)), pr(D.right(v('subject'), 3)), pr(D.meth(v('subject'), 'upper'))],
+        erl: 'subject = "ComputerScience"\nprint(subject.length)          // 15\nprint(subject.substring(3, 5))  // puter\nprint(subject.left(4))          // Comp\nprint(subject.right(3))         // nce\nprint(subject.upper)            // COMPUTERSCIENCE',
+        note: 'A Python slice is [start : end] and stops before end. OCR\'s substring is (start, number of characters). Both describe "puter" above.' }
+    ] },
+    { group: 'Arrays and records', topics: [
+      { id: 'arrays', title: 'Arrays', sub: 'one-dimensional', colour: C.arrays, where: 'Arrays',
+        what: ['An array stores several values of the same type under one name. Each item has an index, and the first index is 0. Python uses a list to do the job of an array.'],
+        blocks: [set('colours', D.list('"red", "green", "blue"')), pr(D.idx(v('colours'), 0)), D.seti('colours', 1, 'yellow'), D.for1('i', D.len(v('colours')), [pr(D.idx(v('colours'), v('i')))])],
+        erl: 'array colours[3]\ncolours[0] = "red"\ncolours[1] = "green"\ncolours[2] = "blue"\nprint(colours[0])\ncolours[1] = "yellow"\nfor i = 0 to 2\n    print(colours[i])\nnext i',
+        note: 'An OCR array has a fixed size. For a fixed-size Python list use the [ 0 ] * 5 block, then fill it by index. Asking for an index that does not exist gives an IndexError.' },
+      { id: 'arrays2d', title: '2D arrays', sub: 'rows and columns', colour: C.arrays, where: 'Arrays',
+        what: ['A 2D array is a table: every item has a row number and a column number. It is good for boards, seating plans and tables of marks.'],
+        blocks: [set('grid', D.grid(2, 3, 0)), D.seti2('grid', 1, 2, 7), pr(D.idx2(v('grid'), 1, 2)), D.each('row', v('grid'), [pr(v('row'))])],
+        erl: 'array grid[2,3]\ngrid[1,2] = 7\nprint(grid[1,2])',
+        note: 'Python writes grid[row][column] with two pairs of brackets. The exam writes grid[row,column] with one.' },
+      { id: 'records', title: 'Records', sub: 'related facts kept together', colour: C.arrays, where: 'Arrays',
+        what: ['A record holds the different facts about one thing, such as a student\'s name, age and form. Each fact is a field. At GCSE a table of records is usually held in a 2D array: one row per record, one column per field.'],
+        blocks: [set('students', D.list('["Ana", 15, "10B"], ["Ben", 16, "11A"]')), pr(D.idx2(v('students'), 0, 0)), D.each('student', v('students'), [pr2(D.idx(v('student'), 0), D.idx(v('student'), 2))])],
+        erl: null,
+        note: 'Unlike a true array, a record mixes data types: here a string, an integer and another string. Exam questions usually show records as a table and ask you to read or search it.' }
+    ] },
+    { group: 'Sub programs', topics: [
+      { id: 'proc0', title: 'Procedure', sub: 'without parameters', colour: C.subs, where: 'Sub programs',
+        what: ['A procedure is a named block of code that does a job. Define it once with def, then call it by name whenever you need it. It does not send a value back.'],
+        blocks: [D.proc('showMenu', '', [pr('1. Play'), pr('2. Quit')]), D.call('showMenu'), D.call('showMenu')],
+        erl: 'procedure showMenu()\n    print("1. Play")\n    print("2. Quit")\nendprocedure\n\nshowMenu()\nshowMenu()',
+        note: 'Defining a procedure does not run it. Nothing happens until it is called. The def must come before the call.' },
+      { id: 'proc1', title: 'Procedure', sub: 'with parameters', colour: C.subs, where: 'Sub programs',
+        what: ['Parameters are variables listed in the brackets of def. They receive the values (arguments) supplied when the procedure is called, so one procedure can work on different data.', 'Type the parameter names in the brackets, separated by commas. To use one inside the procedure, take the parameter block and type the same name.'],
+        blocks: [D.proc('greet', 'name, times', [D.for1('i', p('times'), [pr(say('Hello ', p('name')))])]), D.call('greet', 'Sam', 3), D.call('greet', 'Priya', 1)],
+        erl: 'procedure greet(name, times)\n    for i = 1 to times\n        print("Hello " + name)\n    next i\nendprocedure\n\ngreet("Sam", 3)\ngreet("Priya", 1)',
+        note: 'Arguments are matched to parameters by position: "Sam" goes into name and 3 goes into times.' },
+      { id: 'func0', title: 'Function', sub: 'without parameters', colour: C.subs, where: 'Sub programs',
+        what: ['A function is a sub program that returns a value to the line that called it. Because it gives something back, you call it inside an expression or store its result in a variable.'],
+        blocks: [D.imp('random'), D.func('rollDice', '', null, D.randint(1, 6)), set('roll', D.fcall('rollDice')), pr2('You rolled', v('roll'))],
+        erl: 'function rollDice()\n    return random(1, 6)\nendfunction\n\nroll = rollDice()\nprint("You rolled " + str(roll))',
+        note: 'The difference to remember for the exam: a function returns a value, a procedure does not.' },
+      { id: 'func1', title: 'Function', sub: 'with parameters', colour: C.subs, where: 'Sub programs',
+        what: ['A function with parameters takes data in, works on it, and returns the answer.'],
+        blocks: [D.func('area', 'width, height', null, op(p('width'), '*', p('height'))), set('room', D.fcall('area', 5, 3)), pr(v('room')), pr(D.fcall('area', 10, 2))],
+        erl: 'function area(width, height)\n    return width * height\nendfunction\n\nroom = area(5, 3)\nprint(room)\nprint(area(10, 2))',
+        note: 'return ends the function straight away. For an early exit inside an if, use the separate return block.' },
+      { id: 'scope', title: 'Local and global variables', sub: 'where a variable can be used', colour: C.subs, where: 'Variables',
+        what: ['A local variable is created inside a sub program and exists only while it runs. A global variable is created in the main program and can be read anywhere.', 'To change a global variable from inside a Python sub program, say so first with the global block.'],
+        blocks: [set('score', 0), D.proc('addPoint', '', [D.glob('score'), set('score', op(v('score'), '+', 1))]), D.call('addPoint'), D.call('addPoint'), pr(v('score'))],
+        erl: 'global score = 0\n\nprocedure addPoint()\n    score = score + 1\nendprocedure\n\naddPoint()\naddPoint()\nprint(score)',
+        note: 'Passing values in as parameters and returning results is usually better than globals: the sub program is easier to test and reuse.' }
+    ] },
+    { group: 'Files', topics: [
+      { id: 'filewrite', title: 'Write to a file', sub: 'open, write, close', colour: C.files, where: 'Files',
+        what: ['Data in variables is lost when the program ends. Writing it to a text file keeps it. Open the file, write to it, then close it.'],
+        table: { head: ['Mode', 'Means'], rows: [['"w"', 'write: start the file again from empty'], ['"a"', 'append: add to the end'], ['"r"', 'read only']] },
+        blocks: [D.fopen('myFile', 'scores.txt', 'w'), D.fwrite('myFile', 'Ana,12\\n'), D.fwrite('myFile', 'Ben,9\\n'), D.fclose('myFile'), pr('Saved')],
+        erl: 'newFile("scores.txt")\nmyFile = open("scores.txt")\nmyFile.writeLine("Ana,12")\nmyFile.writeLine("Ben,9")\nmyFile.close()\nprint("Saved")',
+        note: 'write() does not start a new line for you, so end each line with \\n. write() only accepts a string: use str() for numbers. Open the Files tab under the console to see what was saved.' },
+      { id: 'fileread', title: 'Read from a file', sub: 'open, read line by line, close', colour: C.files, where: 'Files',
+        what: ['readline() gives the next line of the file each time you call it. When there is nothing left it gives an empty string, which is how the loop knows to stop.'],
+        blocks: [D.fopen('myFile', 'names.txt', 'r'), set('line', D.freadline('myFile')), D.wh(cmp(v('line'), '!=', ''), [pr(D.meth(v('line'), 'strip')), set('line', D.freadline('myFile'))]), D.fclose('myFile')],
+        erl: 'myFile = open("names.txt")\nwhile NOT myFile.endOfFile()\n    print(myFile.readLine())\nendwhile\nmyFile.close()',
+        note: 'Each line arrives with its \\n on the end; strip() removes it. names.txt comes ready-made in this tool. Reading a file that does not exist is an error.' }
+    ] },
+    { group: 'Random numbers', topics: [
+      { id: 'random', title: 'Random numbers', sub: 'dice, games and simulations', colour: C.random, where: 'Random and time',
+        what: ['random.randint(1, 6) picks a whole number from 1 to 6. The random library has to be imported first.'],
+        blocks: [D.imp('random'), set('dice', D.randint(1, 6)), pr2('You rolled', v('dice'))],
+        erl: 'dice = random(1, 6)\nprint("You rolled " + str(dice))',
+        note: 'Both ends are included: randint(1, 6) can give 1 and it can give 6. Run it several times to see different results.' }
+    ] }
+  ];
+
+  /* ------------------------------------------------------------------
+     EXAMPLES: grouped by concept in J277 section 2.2
+     ------------------------------------------------------------------ */
+  var EX = [
+    { group: 'Variables, constants, inputs and outputs', colour: C.vars, items: [
+      { id: 'hello', title: 'Hello, you', about: 'Input into a variable, then output it.',
+        blocks: [set('name', inp('What is your name? ')), pr(say('Hello ', v('name'), ', welcome to Python'))] },
+      { id: 'vat', title: 'VAT calculator', about: 'A constant, a real number and a calculation.',
+        blocks: [D.konst('VAT', 0.2), set('price', cast('float', inp('Price before VAT: '))), set('tax', op(v('price'), '*', v('VAT'))), set('total', op(v('price'), '+', v('tax'))), pr2('VAT to add:', D.round(v('tax'), 2)), pr2('Total to pay:', D.round(v('total'), 2))] }
+    ] },
+    { group: 'Sequence', colour: C.io, items: [
+      { id: 'rectangle', title: 'Area and perimeter', about: 'Steps that must happen in the right order.',
+        blocks: [set('width', cast('int', inp('Width: '))), set('height', cast('int', inp('Height: '))), set('area', op(v('width'), '*', v('height'))), set('perimeter', op(2, '*', op(v('width'), '+', v('height')))), pr2('Area:', v('area')), pr2('Perimeter:', v('perimeter'))] },
+      { id: 'swap', title: 'Swap two variables', about: 'Why a temporary variable is needed.',
+        blocks: [set('a', 5), set('b', 9), D.cm('keep a safe before it is overwritten'), set('temp', v('a')), set('a', v('b')), set('b', v('temp')), pr2('a is now', v('a')), pr2('b is now', v('b'))] }
+    ] },
+    { group: 'Selection', colour: C.select, items: [
+      { id: 'passfail', title: 'Pass or fail', about: 'if and else: two branches.',
+        blocks: [set('mark', cast('int', inp('Mark out of 100: '))), D.ife(cmp(v('mark'), '>=', 40), [pr('Pass')], [pr('Not yet: have another go')])] },
+      { id: 'grades', title: 'Grade boundaries', about: 'A chain of elif blocks: the first True condition wins.',
+        blocks: [set('mark', cast('int', inp('Mark out of 100: '))), D.iff(cmp(v('mark'), '>=', 80), [pr('Distinction')]), D.elif(cmp(v('mark'), '>=', 60), [pr('Merit')]), D.elif(cmp(v('mark'), '>=', 40), [pr('Pass')]), D.els([pr('Ungraded')])] },
+      { id: 'ride', title: 'Theme park ride', about: 'Nested selection: a decision inside a decision.',
+        blocks: [set('height', cast('int', inp('Height in cm: '))), D.ife(cmp(v('height'), '>=', 120), [set('adult', inp('Is an adult with you? (yes/no) ')), D.ife(cmp(v('adult'), '==', 'yes'), [pr('On you go')], [pr('You need an adult with you')])], [pr('Sorry, you are not tall enough')])] }
+    ] },
+    { group: 'Iteration: count-controlled', colour: C.loops, items: [
+      { id: 'timestable', title: 'Times table', about: 'The loop variable used in a calculation.',
+        blocks: [set('table', cast('int', inp('Which times table? '))), D.for2('i', 1, 13, [set('answer', op(v('i'), '*', v('table'))), pr(say(cast('str', v('i')), ' x ', cast('str', v('table')), ' = ', cast('str', v('answer'))))])] },
+      { id: 'total5', title: 'Total of five numbers', about: 'A running total inside a loop.',
+        blocks: [set('total', 0), D.for1('count', 5, [set('number', cast('int', inp('Enter a number: '))), set('total', op(v('total'), '+', v('number')))]), pr2('Total:', v('total')), pr2('Mean:', op(v('total'), '/', 5))] },
+      { id: 'countdown', title: 'Countdown', about: 'A negative step counts backwards.',
+        blocks: [D.imp('time'), D.for3('i', 5, 0, -1, [pr(v('i')), D.sleep(0.5)]), pr('Lift off!')] }
+    ] },
+    { group: 'Iteration: condition-controlled', colour: C.loops, items: [
+      { id: 'password', title: 'Password check', about: 'Repeat until the user gets it right.',
+        blocks: [set('attempts', 1), set('password', inp('Password: ')), D.wh(cmp(v('password'), '!=', 'letmein'), [pr('Wrong password'), set('attempts', op(v('attempts'), '+', 1)), set('password', inp('Password: '))]), pr2('Access granted. Attempts:', v('attempts'))] },
+      { id: 'sentinel', title: 'Add until zero', about: 'A loop that ends on a special value.',
+        blocks: [set('total', 0), set('number', cast('int', inp('Number (0 to stop): '))), D.wh(cmp(v('number'), '!=', 0), [set('total', op(v('total'), '+', v('number'))), set('number', cast('int', inp('Number (0 to stop): ')))]), pr2('Total:', v('total'))] }
+    ] },
+    { group: 'Arithmetic operators', colour: C.ops, items: [
+      { id: 'sweets', title: 'Sharing sweets', about: 'DIV and MOD: whole shares and the remainder.',
+        blocks: [set('sweets', cast('int', inp('How many sweets? '))), set('children', cast('int', inp('How many children? '))), pr2('Each child gets', op(v('sweets'), '//', v('children'))), pr2('Left over:', op(v('sweets'), '%', v('children')))] },
+      { id: 'evenodd', title: 'Even or odd', about: 'MOD 2 tests whether a number divides exactly.',
+        blocks: [set('number', cast('int', inp('Enter a whole number: '))), D.ife(cmp(op(v('number'), '%', 2), '==', 0), [pr('Even')], [pr('Odd')])] },
+      { id: 'circle', title: 'Area of a circle', about: 'A power and a constant.',
+        blocks: [D.konst('PI', 3.142), set('radius', cast('float', inp('Radius: '))), set('area', op(v('PI'), '*', op(v('radius'), '**', 2))), pr2('Area:', D.round(v('area'), 2))] }
+    ] },
+    { group: 'Comparison and Boolean operators', colour: C.ops, items: [
+      { id: 'login', title: 'Login', about: 'AND: both conditions must be True.',
+        blocks: [set('username', inp('Username: ')), set('password', inp('Password: ')), D.ife(D.lg(cmp(v('username'), '==', 'admin'), 'and', cmp(v('password'), '==', 'jersey1')), [pr('Welcome back')], [pr('Details not recognised')])] },
+      { id: 'weekend', title: 'Is it the weekend?', about: 'OR: either condition is enough.',
+        blocks: [set('day', D.meth(inp('What day is it? '), 'lower')), D.ife(D.lg(cmp(v('day'), '==', 'saturday'), 'or', cmp(v('day'), '==', 'sunday')), [pr('Weekend: no school')], [pr('School day')])] },
+      { id: 'range', title: 'Valid mark', about: 'NOT and a range check for validation.',
+        blocks: [set('mark', cast('int', inp('Mark (0 to 100): '))), set('valid', D.lg(cmp(v('mark'), '>=', 0), 'and', cmp(v('mark'), '<=', 100))), D.ife(D.not(v('valid')), [pr('That mark is out of range')], [pr('Mark accepted')])] }
+    ] },
+    { group: 'Data types and casting', colour: C.cast, items: [
+      { id: 'types', title: 'Five data types', about: 'Integer, real, Boolean, character and string.',
+        blocks: [set('goals', 3), set('price', 4.75), set('member', D.bool(true)), set('grade', 'A'), set('club', 'Jersey Reds'), pr(op(v('goals'), '+', 1)), pr(op(v('price'), '*', 2)), pr(D.not(v('member'))), pr(say(v('club'), ' got an ', v('grade')))] },
+      { id: 'casterror', title: 'Why casting matters', about: 'The same digits as text and as a number.',
+        blocks: [set('typed', inp('Enter a number: ')), D.cm('typed is a string, so + joins it'), pr(op(v('typed'), '+', v('typed'))), set('number', cast('int', v('typed'))), D.cm('number is an integer, so + adds it'), pr(op(v('number'), '+', v('number')))] }
+    ] },
+    { group: 'String manipulation', colour: C.strings, items: [
+      { id: 'username', title: 'Username maker', about: 'Substrings, case and concatenation.',
+        blocks: [set('first', inp('First name: ')), set('surname', inp('Surname: ')), set('year', inp('Year you joined: ')), set('username', say(D.meth(D.left(v('first'), 1), 'lower'), D.meth(v('surname'), 'lower'), D.right(v('year'), 2))), pr2('Your username is', v('username')), pr2('Number of characters:', D.len(v('username')))] },
+      { id: 'ascii', title: 'ASCII shift', about: 'ord and chr: from character to code and back.',
+        blocks: [set('letter', inp('Type one letter: ')), set('code', D.ord(v('letter'))), pr2('ASCII code:', v('code')), pr2('Next character:', D.chr(op(v('code'), '+', 1)))] },
+      { id: 'vowels', title: 'Count the vowels', about: 'Visit every character of a string.',
+        blocks: [set('word', D.meth(inp('Type a word: '), 'lower')), set('count', 0), D.each('letter', v('word'), [D.iff(cmp(v('letter'), 'in', 'aeiou'), [set('count', op(v('count'), '+', 1))])]), pr2('Vowels:', v('count'))] }
+    ] },
+    { group: 'Arrays', colour: C.arrays, items: [
+      { id: 'planets', title: 'Read an array', about: 'Indexes start at 0; len gives the size.',
+        blocks: [set('planets', D.list('"Mercury", "Venus", "Earth", "Mars"')), pr2('First:', D.idx(v('planets'), 0)), pr2('Last:', D.idx(v('planets'), op(D.len(v('planets')), '-', 1))), D.for1('i', D.len(v('planets')), [pr2(v('i'), D.idx(v('planets'), v('i')))])] },
+      { id: 'fillarray', title: 'Fill an array from input', about: 'A fixed-size array filled by index.',
+        blocks: [set('names', D.fill('', 3)), D.for1('i', 3, [D.seti('names', v('i'), inp('Enter a name: '))]), pr(v('names'))] },
+      { id: 'highest', title: 'Highest score', about: 'A linear pass through an array to find the largest.',
+        blocks: [set('scores', D.list('34, 78, 52, 91, 66')), set('highest', D.idx(v('scores'), 0)), D.each('score', v('scores'), [D.iff(cmp(v('score'), '>', v('highest')), [set('highest', v('score'))])]), pr2('Highest score:', v('highest'))] }
+    ] },
+    { group: '2D arrays and records', colour: C.arrays, items: [
+      { id: 'board', title: 'Noughts and crosses board', about: 'Set cells by row and column, then print each row.',
+        blocks: [set('board', D.grid(3, 3, '-')), D.seti2('board', 1, 1, 'X'), D.seti2('board', 0, 2, 'O'), D.each('row', v('board'), [pr(v('row'))])] },
+      { id: 'students', title: 'Student records', about: 'One row per record; search for the top mark.',
+        blocks: [set('students', D.list('["Ana", "10B", 72], ["Ben", "11A", 85], ["Caz", "10B", 64]')), set('best', D.idx(v('students'), 0)), D.each('student', v('students'), [pr2(D.idx(v('student'), 0), D.idx(v('student'), 2)), D.iff(cmp(D.idx(v('student'), 2), '>', D.idx(v('best'), 2)), [set('best', v('student'))])]), pr2('Top mark:', D.idx(v('best'), 0))] }
+    ] },
+    { group: 'Procedures and functions', colour: C.subs, items: [
+      { id: 'exproc0', title: 'Procedure without parameters', about: 'Define once, call twice.',
+        blocks: [D.proc('drawLine', '', [pr('--------------------')]), D.call('drawLine'), pr('  HIGH SCORES'), D.call('drawLine')] },
+      { id: 'exproc1', title: 'Procedure with parameters', about: 'Arguments are matched to parameters by position.',
+        blocks: [D.proc('countdown', 'start, message', [D.for3('i', p('start'), 0, -1, [pr(v('i'))]), pr(p('message'))]), D.call('countdown', 3, 'Go!'), D.call('countdown', 5, 'Happy New Year!')] },
+      { id: 'exfunc0', title: 'Function without parameters', about: 'It returns a value you can store.',
+        blocks: [D.imp('random'), D.func('flipCoin', '', [set('number', D.randint(0, 1)), D.iff(cmp(v('number'), '==', 0), [D.ret('heads')])], 'tails'), set('result', D.fcall('flipCoin')), pr2('The coin shows', v('result'))] },
+      { id: 'exfunc1', title: 'Function with parameters', about: 'Data in, answer out; reuse it with different arguments.',
+        blocks: [D.func('average', 'a, b', [set('total', op(p('a'), '+', p('b')))], op(v('total'), '/', 2)), pr(D.fcall('average', 10, 20)), set('x', cast('float', inp('First number: '))), set('y', cast('float', inp('Second number: '))), pr2('Their average is', D.fcall('average', v('x'), v('y')))] }
+    ] },
+    { group: 'File handling', colour: C.files, items: [
+      { id: 'exwrite', title: 'Write a file', about: 'Open for writing, write lines, close. Check the Files tab.',
+        blocks: [D.fopen('myFile', 'shopping.txt', 'w'), D.for1('i', 3, [set('item', inp('Item to buy: ')), D.fwrite('myFile', op(v('item'), '+', '\\n'))]), D.fclose('myFile'), pr('Saved to shopping.txt')] },
+      { id: 'exread', title: 'Read a file line by line', about: 'Loop until readline gives an empty string.',
+        blocks: [D.fopen('myFile', 'names.txt', 'r'), set('count', 0), set('line', D.freadline('myFile')), D.wh(cmp(v('line'), '!=', ''), [set('count', op(v('count'), '+', 1)), pr2(v('count'), D.meth(v('line'), 'strip')), set('line', D.freadline('myFile'))]), D.fclose('myFile'), pr2('Lines read:', v('count'))] },
+      { id: 'exappend', title: 'High score table', about: 'Append a record, then read the file back and split each line.',
+        blocks: [set('player', inp('Your name: ')), set('points', inp('Your score: ')), D.fopen('myFile', 'highscores.txt', 'a'), D.fwrite('myFile', say(v('player'), ',', v('points'), '\\n')), D.fclose('myFile'), D.fopen('myFile', 'highscores.txt', 'r'), D.each('line', v('myFile'), [set('fields', D.split(D.meth(v('line'), 'strip'), ',')), pr2(D.idx(v('fields'), 0), D.idx(v('fields'), 1))]), D.fclose('myFile')] }
+    ] },
+    { group: 'Random numbers', colour: C.random, items: [
+      { id: 'dice', title: 'Roll two dice', about: 'Two random integers added together.',
+        blocks: [D.imp('random'), set('dice1', D.randint(1, 6)), set('dice2', D.randint(1, 6)), pr2(v('dice1'), v('dice2')), pr2('Total:', op(v('dice1'), '+', v('dice2'))), D.iff(cmp(v('dice1'), '==', v('dice2')), [pr('A double!')])] },
+      { id: 'guess', title: 'Guess the number', about: 'Random, while, selection and a counter working together.',
+        blocks: [D.imp('random'), set('secret', D.randint(1, 20)), set('guess', 0), set('tries', 0), pr('I am thinking of a number from 1 to 20'), D.wh(cmp(v('guess'), '!=', v('secret')), [set('guess', cast('int', inp('Your guess: '))), set('tries', op(v('tries'), '+', 1)), D.ifee(cmp(v('guess'), '<', v('secret')), [pr('Too low')], cmp(v('guess'), '>', v('secret')), [pr('Too high')], [pr('Correct!')])]), pr2('Number of tries:', v('tries'))] }
+    ] }
+  ];
+
+  HELP.forEach(function (g) { g.topics.forEach(function (tp) { tp.state = P(tp.blocks); delete tp.blocks; }); });
+  EX.forEach(function (g) { g.items.forEach(function (ex) { ex.state = P(ex.blocks); delete ex.blocks; }); });
+  return { HELP: HELP, EXAMPLES: EX, FILES: { 'names.txt': 'Ana\nBen\nCaz\nDev\n' } };
+}
+
+/* =====================================================================
+   3. VIRTUAL FILES — open(), readline(), write()... for the browser.
+   Written in Python and handed to the interpreter as the built-in open().
+   ===================================================================== */
+function PB_VFS(files) {
+  return '_files = ' + JSON.stringify(files) + '\n' + [
+    'class TextFile:',
+    '    def __init__(self, name, mode):',
+    '        self.name = name',
+    '        self.mode = mode',
+    '        self.closed = False',
+    '        self._pos = 0',
+    '        if mode == "r":',
+    '            if name not in _files:',
+    '                raise IOError("there is no file called \'" + name + "\'. Check the spelling, or write to it first")',
+    '        elif mode == "w":',
+    '            _files[name] = ""',
+    '        elif mode == "a":',
+    '            if name not in _files:',
+    '                _files[name] = ""',
+    '        else:',
+    '            raise ValueError("the mode must be \\"r\\", \\"w\\" or \\"a\\"")',
+    '    def _check(self, need):',
+    '        if self.closed:',
+    '            raise ValueError("this file has already been closed")',
+    '        if need == "r" and self.mode != "r":',
+    '            raise IOError("this file was opened for writing, so it cannot be read. Close it and open it again with \\"r\\"")',
+    '        if need == "w" and self.mode == "r":',
+    '            raise IOError("this file was opened with \\"r\\", so it cannot be written to. Open it with \\"w\\" or \\"a\\"")',
+    '    def read(self):',
+    '        self._check("r")',
+    '        data = _files[self.name][self._pos:]',
+    '        self._pos = len(_files[self.name])',
+    '        return data',
+    '    def readline(self):',
+    '        self._check("r")',
+    '        data = _files[self.name]',
+    '        if self._pos >= len(data):',
+    '            return ""',
+    '        end = data.find("\\n", self._pos)',
+    '        if end == -1:',
+    '            end = len(data)',
+    '        else:',
+    '            end = end + 1',
+    '        line = data[self._pos:end]',
+    '        self._pos = end',
+    '        return line',
+    '    def readlines(self):',
+    '        lines = []',
+    '        line = self.readline()',
+    '        while line != "":',
+    '            lines.append(line)',
+    '            line = self.readline()',
+    '        return lines',
+    '    def write(self, text):',
+    '        self._check("w")',
+    '        if not isinstance(text, str):',
+    '            raise TypeError("write() needs a string. Use str() to convert a number first")',
+    '        _files[self.name] = _files[self.name] + text',
+    '    def close(self):',
+    '        self.closed = True',
+    '    def __iter__(self):',
+    '        return iter(self.readlines())',
+    'def open(name, mode="r"):',
+    '    return TextFile(name, mode)',
+    ''
+  ].join('\n');
+}
+
+/* =====================================================================
+   4. INTERFACE — workspace, help drawer, examples, runner, console
+   ===================================================================== */
+function PB_ui(Blockly, pythonNS, pythonReady) {
+  var core = PB_core(Blockly, pythonNS); core.defineAll();
+  var content = PB_content(core);
+  var STORE = 'python-blocks-ocr:v1';
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function store(key, value) { try { if (value === undefined) return localStorage.getItem(key); localStorage.setItem(key, value); } catch (e) { return null; } }
+
+  /* ---------------- syntax colouring (Python and OCR reference language) ---------------- */
+  var WORDS = {
+    py: { kw: 'if elif else for while in def return import global and or not True False None pass', fn: 'print input int float str bool len range round ord chr open' },
+    erl: { kw: 'if then elseif else endif for to step next while endwhile do until procedure endprocedure function endfunction return const global array AND OR NOT MOD DIV switch case default endswitch True False', fn: 'print input int float real str bool open newFile random ASC CHR' }
+  };
+  function hl(code, lang) {
+    var kw = WORDS[lang].kw.split(' '), fn = WORDS[lang].fn.split(' '), mark = lang === 'py' ? '#' : '//';
+    return code.split('\n').map(function (line) {
+      var out = '', i = 0, m, rest;
+      while (i < line.length) {
+        rest = line.slice(i);
+        if (rest.indexOf(mark) === 0) { out += '<span class="cm">' + esc(rest) + '</span>'; break; }
+        if ((m = /^("(?:\\.|[^"\\])*"?|'(?:\\.|[^'\\])*'?)/.exec(rest))) { out += '<span class="st">' + esc(m[0]) + '</span>'; }
+        else if ((m = /^[A-Za-z_]\w*/.exec(rest))) { out += kw.indexOf(m[0]) >= 0 ? '<span class="kw">' + m[0] + '</span>' : fn.indexOf(m[0]) >= 0 && /^\s*\(/.test(rest.slice(m[0].length)) ? '<span class="fn">' + m[0] + '</span>' : m[0]; }
+        else if ((m = /^\d+(\.\d+)?/.exec(rest))) { out += '<span class="nu">' + m[0] + '</span>'; }
+        else { m = [rest.charAt(0)]; out += esc(m[0]); }
+        i += m[0].length;
+      }
+      return out;
+    });
+  }
+
+  /* ---------------- themes ---------------- */
+  var FONT = { family: '"JetBrains Mono","Cascadia Code",Consolas,Menlo,monospace', weight: '600', size: 11 };
+  var THEMES = {
+    light: Blockly.Theme.defineTheme('pb_light', { name: 'pb_light', base: Blockly.Themes.Classic, blockStyles: core.BLOCK_STYLES, fontStyle: FONT,
+      componentStyles: { workspaceBackgroundColour: '#F4F7FB', toolboxBackgroundColour: '#FFFFFF', toolboxForegroundColour: '#14213D', flyoutBackgroundColour: '#E3EBF5', flyoutForegroundColour: '#44546F', flyoutOpacity: 0.98, scrollbarColour: '#8FA0BA', scrollbarOpacity: 0.5, insertionMarkerColour: '#14213D', insertionMarkerOpacity: 0.3 } }),
+    dark: Blockly.Theme.defineTheme('pb_dark', { name: 'pb_dark', base: Blockly.Themes.Classic, blockStyles: core.BLOCK_STYLES, fontStyle: FONT,
+      componentStyles: { workspaceBackgroundColour: '#0F1729', toolboxBackgroundColour: '#17213A', toolboxForegroundColour: '#E6ECF8', flyoutBackgroundColour: '#1E2B49', flyoutForegroundColour: '#B5C2DA', flyoutOpacity: 0.98, scrollbarColour: '#5C6E90', scrollbarOpacity: 0.6, insertionMarkerColour: '#FFFFFF', insertionMarkerOpacity: 0.3 } })
+  };
+  var theme = store('pb-theme') === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+
+  /* ---------------- dialogs that work inside sandboxed frames too ---------------- */
+  function dialog(message, opts) {
+    return new Promise(function (resolve) {
+      var veil = el('div', 'veil'), box = el('div', 'modal'), input = null, row = el('div', 'actions');
+      box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
+      box.appendChild(el('p', null, message));
+      if (opts.prompt) { input = el('input'); input.value = opts.value || ''; input.setAttribute('spellcheck', 'false'); input.setAttribute('autocapitalize', 'off'); box.appendChild(input); }
+      function done(result) { veil.remove(); resolve(result); }
+      if (opts.cancel) { var no = el('button', 'act ghost', 'Cancel'); no.onclick = function () { done(opts.prompt ? null : false); }; row.appendChild(no); }
+      var ok = el('button', 'act', 'OK'); ok.onclick = function () { done(opts.prompt ? input.value : true); }; row.appendChild(ok);
+      box.appendChild(row); veil.appendChild(box); document.body.appendChild(veil);
+      veil.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') ok.click(); if (e.key === 'Escape' && opts.cancel) done(opts.prompt ? null : false); });
+      setTimeout(function () { (input || ok).focus(); if (input) input.select(); }, 30);
+    });
+  }
+  Blockly.dialog.setPrompt(function (msg, value, cb) { dialog(msg, { prompt: true, value: value, cancel: true }).then(cb); });
+  Blockly.dialog.setConfirm(function (msg, cb) { dialog(msg, { cancel: true }).then(cb); });
+  Blockly.dialog.setAlert(function (msg, cb) { dialog(msg, {}).then(function () { if (cb) cb(); }); });
+
+  /* ---------------- workspace ---------------- */
+  var ws = Blockly.inject('blocklyDiv', {
+    toolbox: core.TOOLBOX, theme: THEMES[theme], renderer: 'zelos', sounds: false, trashcan: false,
+    media: 'https://cdnjs.cloudflare.com/ajax/libs/blockly/13.2.1/media/',
+    grid: { spacing: 24, length: 24, colour: theme === 'dark' ? '#1B2742' : '#DCE6F2', snap: false },
+    zoom: { controls: false, wheel: true, pinch: true, startScale: 0.9, maxScale: 2, minScale: 0.4, scaleSpeed: 1.1 },
+    move: { scrollbars: true, drag: true, wheel: true }
+  });
+  ws.registerToolboxCategoryCallback('PB_VARIABLES', core.variablesFlyout);
+  ws.registerButtonCallback('PB_NEW_VARIABLE', function (button) { Blockly.Variables.createVariableButtonHandler(button.getTargetWorkspace()); });
+  if (window.ResizeObserver) new ResizeObserver(function () { Blockly.svgResize(ws); }).observe($('blocklyDiv'));
+  window.addEventListener('resize', function () { Blockly.svgResize(ws); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { ws.setTheme(THEMES[theme]); });
+
+  $('zoomIn').onclick = function () { ws.zoomCenter(1); };
+  $('zoomOut').onclick = function () { ws.zoomCenter(-1); };
+  $('zoomFit').onclick = function () { if (ws.getAllBlocks(false).length) ws.zoomToFit(); if (ws.getScale() > 0.9) { ws.setScale(0.9); ws.scrollCenter(); } };
+
+  function setTheme(next) {
+    theme = next; document.documentElement.setAttribute('data-theme', theme); store('pb-theme', theme);
+    ws.setTheme(THEMES[theme]);
+    Array.prototype.forEach.call(document.querySelectorAll('#blocklyDiv pattern line'), function (l) { l.setAttribute('stroke', theme === 'dark' ? '#1B2742' : '#DCE6F2'); });
+    $('btnTheme').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+  }
+  $('btnTheme').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+  $('btnTheme').onclick = function () { setTheme(theme === 'dark' ? 'light' : 'dark'); };
+
+  /* ---------------- code view ---------------- */
+  var code = '', dirty = false;
+  function renderCode(hitLine) {
+    var box = $('code'); box.innerHTML = '';
+    if (!code.trim()) { box.appendChild(el('div', 'hint', onlyStart() ? 'Your Python code appears here as you build.' : 'Snap your blocks under the start block to make them part of the program.')); return; }
+    hl(code.replace(/\n$/, ''), 'py').forEach(function (html, i) {
+      var row = el('div', 'ln' + (hitLine === i + 1 ? ' hit' : ''));
+      row.innerHTML = '<span class="no">' + (i + 1) + '</span><span>' + (html || ' ') + '</span>';
+      box.appendChild(row);
+      if (hitLine === i + 1) row.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
+  /* ---------------- warnings on blocks ---------------- */
+  function refreshWarnings(emptyOnes) {
+    var blocks = ws.getAllBlocks(false), constants = {};
+    blocks.forEach(function (b) { if (b.type === 'py_const') { var nm = b.getField('VAR').getText(); constants[nm] = (constants[nm] || 0) + 1; } });
+    blocks.forEach(function (b) {
+      var text = null, nm = b.getField('VAR') ? b.getField('VAR').getText() : '';
+      if (b.type === 'py_const') {
+        if (nm !== nm.toUpperCase()) text = 'Constants are written in CAPITALS: rename this to ' + nm.toUpperCase() + '.';
+        else if (constants[nm] > 1) text = nm + ' is given a value more than once. A constant gets its value once and keeps it.';
+      } else if ((b.type === 'py_set' || /^py_for/.test(b.type)) && constants[nm]) { text = nm + ' is a constant, so its value should not change.'; }
+      if (emptyOnes && emptyOnes.indexOf(b) >= 0) text = 'This block has an empty slot. Drop a value into it.';
+      if (b.pbWarning !== text) { b.pbWarning = text; b.setWarningText(text); }
+    });
+  }
+  function liveBlocks() {   // the blocks that are part of the program
+    var starts = ws.getBlocksByType('py_start', false), all = [];
+    if (!starts.length) return ws.getAllBlocks(false);
+    starts.forEach(function (st) { all = all.concat(st.getDescendants(false)); });
+    return all;
+  }
+  function onlyStart() { return ws.getAllBlocks(false).every(function (b) { return b.type === 'py_start'; }); }
+  function emptySlots() {
+    var found = [];
+    liveBlocks().forEach(function (b) {
+      if (b.type === 'py_print' || b.type === 'py_input' || b.isInsertionMarker()) return;
+      b.inputList.forEach(function (input) {
+        if (input.connection && input.connection.type === Blockly.ConnectionType.INPUT_VALUE && !input.connection.targetBlock() && found.indexOf(b) < 0) found.push(b);
+      });
+    });
+    return found;
+  }
+
+  var saveTimer = null;
+  ws.addChangeListener(function (e) {
+    if (e.isUiEvent) return;
+    dirty = true;
+    code = core.codeOf(ws);
+    if (!code.trim()) code = '';
+    renderCode();
+    $('empty').hidden = !onlyStart();
+    refreshWarnings();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () { store(STORE, JSON.stringify({ blocks: Blockly.serialization.workspaces.save(ws), files: files })); }, 400);
+  });
+
+  function loadState(state, label) {
+    Blockly.Events.setGroup(true);
+    try { Blockly.serialization.workspaces.load(state, ws); } finally { Blockly.Events.setGroup(false); }
+    ws.setScale(0.9); ws.scroll(16, 16);
+    setTimeout(function () { dirty = false; }, 150);
+    if (!running) { selectPane('console'); con.clear(); con.info('Press Run to start your program.'); }
+    if (label) toast('Loaded: ' + label + '. Press Run to try it.');
+  }
+
+  /* ---------------- small helpers: toast, two-click confirm ---------------- */
+  var toastTimer = null;
+  function toast(text) { var t = $('toast'); t.textContent = text; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 3200); }
+  function twoClicks(button, target, question, action) {
+    // first click asks, second click does it; only asks when there is work to lose
+    if (!dirty || onlyStart() || button.classList.contains('armed')) { disarm(button, target); action(); return; }
+    button.classList.add('armed'); target.dataset.was = target.textContent; target.textContent = question;
+    button.pbTimer = setTimeout(function () { disarm(button, target); }, 3500);
+  }
+  function disarm(button, target) { clearTimeout(button.pbTimer); if (button.classList.contains('armed')) { button.classList.remove('armed'); target.textContent = target.dataset.was; } }
+
+  /* ---------------- drawer: help and examples ---------------- */
+  var helpBox = el('div'), exBox = el('div'), view = null;
+  $('drawerBody').appendChild(helpBox); $('drawerBody').appendChild(exBox);
+
+  function openCategory(name) {
+    try {
+      var tb = ws.getToolbox(), item = tb.getToolboxItems().filter(function (i) { return i.getName && i.getName() === name; })[0];
+      if (item) tb.setSelectedItem(item);
+    } catch (e) { /* the toolbox API changed: the label still tells the student where to look */ }
+  }
+
+  function buildDetail(tp) {
+    var d = el('div', 'detail'), pre;
+    tp.what.forEach(function (text) { d.appendChild(el('p', null, text)); });
+    if (tp.table) {
+      var table = el('table'), tr = el('tr');
+      tp.table.head.forEach(function (h) { tr.appendChild(el('th', null, h)); }); table.appendChild(tr);
+      tp.table.rows.forEach(function (r) { tr = el('tr'); r.forEach(function (c, i) { var td = el('td'), asCode = tp.table.code ? tp.table.code.indexOf(i) >= 0 : i < r.length - 1; if (asCode) td.appendChild(el('code', null, c)); else td.textContent = c; tr.appendChild(td); }); table.appendChild(tr); });
+      d.appendChild(table);
+    }
+    d.appendChild(el('h4', null, 'Python example'));
+    pre = el('pre'); pre.innerHTML = hl(core.codeFor(tp.state).replace(/\n$/, ''), 'py').join('\n'); d.appendChild(pre);
+    if (tp.erl) { d.appendChild(el('h4', null, 'The same in OCR Exam Reference Language')); pre = el('pre'); pre.innerHTML = hl(tp.erl, 'erl').join('\n'); d.appendChild(pre); }
+    if (tp.note) { var note = el('p', 'note', tp.note); d.appendChild(note); }
+    var row = el('div', 'actions'), build = el('button', 'act', 'Build this example'), find = el('button', 'act ghost', 'Show me the blocks: ' + tp.where);
+    build.onclick = function () { twoClicks(build, build, 'Replace my blocks?', function () { loadState(tp.state, tp.title); }); };
+    find.onclick = function () { openCategory(tp.where); };
+    row.appendChild(build); row.appendChild(find); d.appendChild(row);
+    return d;
+  }
+
+  function renderHelp() {
+    helpBox.appendChild(el('p', 'lede', 'Pick a tool to see what it does, how to write it in Python, and how OCR writes it in the exam.'));
+    var openBtn = null;
+    content.HELP.forEach(function (g) {
+      helpBox.appendChild(el('h3', 'group', g.group));
+      g.topics.forEach(function (tp) {
+        var b = el('button', 'topic'), label = el('span'); b.type = 'button'; b.setAttribute('aria-expanded', 'false');
+        b.style.setProperty('--c', tp.colour); b.appendChild(el('i')); label.textContent = tp.title; label.appendChild(el('small', null, tp.sub)); b.appendChild(label);
+        b.onclick = function () {
+          var isOpen = b.getAttribute('aria-expanded') === 'true';
+          if (openBtn) { openBtn.setAttribute('aria-expanded', 'false'); if (openBtn.nextSibling && openBtn.nextSibling.className === 'detail') openBtn.nextSibling.remove(); }
+          if (isOpen) { openBtn = null; return; }
+          b.setAttribute('aria-expanded', 'true'); b.parentNode.insertBefore(buildDetail(tp), b.nextSibling); openBtn = b;
+          $('drawerBody').scrollTop = b.offsetTop - 8;   // bring the open topic to the top of the drawer
+        };
+        helpBox.appendChild(b);
+      });
+    });
+  }
+
+  function renderExamples() {
+    exBox.appendChild(el('p', 'lede', 'Ready-made programs for each part of Programming fundamentals. Load one, run it, then change it.'));
+    content.EXAMPLES.forEach(function (g) {
+      exBox.appendChild(el('h3', 'group', g.group));
+      g.items.forEach(function (ex) {
+        var b = el('button', 'topic example'), label = el('span'), about = el('small', null, ex.about); b.type = 'button';
+        b.style.setProperty('--c', g.colour); b.appendChild(el('i')); label.textContent = ex.title; label.appendChild(about); b.appendChild(label);
+        b.onclick = function () { twoClicks(b, about, 'This replaces your blocks. Click again to load it.', function () { loadState(ex.state, ex.title); }); };
+        exBox.appendChild(b);
+      });
+    });
+  }
+  renderHelp(); renderExamples();
+
+  function showDrawer(next) {
+    view = view === next ? null : next;
+    $('drawer').hidden = !view;
+    helpBox.hidden = view !== 'help'; exBox.hidden = view !== 'examples';
+    $('btnHelp').setAttribute('aria-expanded', String(view === 'help')); $('btnExamples').setAttribute('aria-expanded', String(view === 'examples'));
+    $('tabHelp').setAttribute('aria-selected', String(view === 'help')); $('tabExamples').setAttribute('aria-selected', String(view === 'examples'));
+    $('drawerBody').scrollTop = 0;
+    Blockly.svgResize(ws);
+  }
+  $('btnHelp').onclick = function () { showDrawer('help'); };
+  $('btnExamples').onclick = function () { showDrawer('examples'); };
+  $('tabHelp').onclick = function () { if (view !== 'help') showDrawer('help'); };
+  $('tabExamples').onclick = function () { if (view !== 'examples') showDrawer('examples'); };
+  $('btnCloseDrawer').onclick = function () { showDrawer(view); };
+
+  /* ---------------- console ---------------- */
+  var con = (function () {
+    var box = $('console'), buffer = '', frame = null, total = 0, pendingAsk = null;
+    function flush() { frame = null; if (!buffer) return; box.appendChild(document.createTextNode(buffer)); buffer = ''; box.scrollTop = box.scrollHeight; }
+    return {
+      clear: function () { buffer = ''; total = 0; box.innerHTML = ''; },
+      size: function () { return total; },
+      write: function (text) { total += text.length; buffer += text; if (!frame) frame = requestAnimationFrame(flush); },
+      info: function (text) { flush(); box.appendChild(el('span', 'dim', text + '\n')); box.scrollTop = box.scrollHeight; },
+      error: function (title, message, hint) {
+        flush(); var e = el('span', 'err'); e.innerHTML = '<b>' + esc(title) + '</b> ' + esc(message) + (hint ? '<br>' + esc(hint) : '');
+        box.appendChild(e); box.scrollTop = box.scrollHeight;
+      },
+      ask: function () {
+        flush();
+        return new Promise(function (resolve, reject) {
+          var input = el('input'); input.setAttribute('aria-label', 'Type your answer and press Enter'); input.setAttribute('spellcheck', 'false'); input.setAttribute('autocomplete', 'off'); input.setAttribute('autocapitalize', 'off');
+          function finish(ok) { var value = input.value; pendingAsk = null; input.replaceWith(el('span', 'typed', ok ? value + '\n' : '\n')); if (ok) resolve(value); else reject(new Error('stopped')); }
+          input.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); finish(true); } });
+          pendingAsk = finish; box.appendChild(input); box.scrollTop = box.scrollHeight;
+          selectPane('console'); setTimeout(function () { input.focus(); }, 30);
+        });
+      },
+      waiting: function () { return !!pendingAsk; },
+      cancelAsk: function () { if (pendingAsk) pendingAsk(false); }
+    };
+  })();
+
+  /* ---------------- files ---------------- */
+  var files = {};
+  function resetFiles() { files = JSON.parse(JSON.stringify(content.FILES)); }
+  function renderFiles() {
+    var box = $('files'), names = Object.keys(files).sort(); box.innerHTML = '';
+    box.appendChild(el('p', null, names.length ? 'Text files your programs can open. They live in this browser tab, not on the computer.' : 'No files yet. Run a program that writes to a file.'));
+    names.forEach(function (nm) {
+      var card = el('div', 'file'), head = el('header'), del = el('button', 'mini', 'Delete');
+      head.appendChild(el('span', null, nm)); head.appendChild(del); card.appendChild(head); card.appendChild(el('pre', null, files[nm]));
+      del.onclick = function () { delete files[nm]; renderFiles(); };
+      box.appendChild(card);
+    });
+    var reset = el('button', 'mini', 'Reset files'); reset.onclick = function () { resetFiles(); renderFiles(); }; box.appendChild(reset);
+  }
+  function selectPane(which) {
+    $('console').hidden = which !== 'console'; $('files').hidden = which !== 'files';
+    $('tabConsole').setAttribute('aria-selected', String(which === 'console')); $('tabFiles').setAttribute('aria-selected', String(which === 'files'));
+    $('btnClearConsole').hidden = which !== 'console';
+    if (which === 'files') renderFiles();
+  }
+  $('tabConsole').onclick = function () { selectPane('console'); };
+  $('tabFiles').onclick = function () { selectPane('files'); };
+  $('btnClearConsole').onclick = function () { if (!running) { con.clear(); con.info('Press Run to start your program.'); } };
+
+  /* ---------------- running Python ---------------- */
+  var running = false, stopReason = null, slowTimer = null, OUTPUT_LIMIT = 60000;
+  var HINTS = [
+    [/^NameError/, /'(random|time)'/, 'Add an import block at the top of your program.'],
+    [/^NameError/, null, 'Python does not know this name yet. Check the spelling and the capital letters, and make sure the variable gets a value (or the sub program is defined) above this line.'],
+    [/^UnboundLocalError/, null, 'Inside a sub program, use the global block before you change a variable from the main program.'],
+    [/^TypeError/, /operand|concatenate|must be str|can only/i, 'Text and numbers are being mixed. Use str() to join a number to text, or int() / float() to do maths with something the user typed.'],
+    [/^TypeError/, /argument|positional|takes/i, 'Count the arguments in the call and the parameters in the def: they must match.'],
+    [/^ValueError/, /invalid literal|could not convert/i, 'int() and float() only work on text that looks like a number.'],
+    [/^ZeroDivisionError/, null, 'Dividing by zero is impossible. Check the value before you divide.'],
+    [/^IndexError/, null, 'That position does not exist. Indexes start at 0, so the last item is at len - 1.'],
+    [/^(SyntaxError|IndentationError|ParseError)/, null, 'Python cannot read this line. Is every elif and else snapped directly under an if? Is a return block outside a function?']
+  ];
+  function describe(err) {
+    var name = 'Error', message = String(err && err.message || err), line = null, i;
+    if (err && err.tp$name) {
+      name = err.tp$name;
+      try { message = err.args && err.args.v && err.args.v.length ? String(Sk.ffi.remapToJs(err.args.v[0])) : ''; } catch (e) { message = String(err); }
+      var tb = err.traceback || [];
+      for (i = 0; i < tb.length; i++) if (/<stdin>/.test(tb[i].filename)) { line = tb[i].lineno; break; }
+    }
+    var hint = null;
+    for (i = 0; i < HINTS.length && !hint; i++) if (HINTS[i][0].test(name) && (!HINTS[i][1] || HINTS[i][1].test(message))) hint = HINTS[i][2];
+    return { title: name + (line ? ' on line ' + line + ':' : ':'), message: message, hint: hint, line: line };
+  }
+  function setRunning(on) { running = on; $('btnRun').hidden = on; $('btnStop').hidden = !on; }
+
+  function run() {
+    if (running) return;
+    selectPane('console'); con.clear(); renderCode();
+    if (!code.trim()) { con.info(onlyStart() ? 'There is nothing to run yet. Snap some blocks under the start block, or open Examples.' : 'Nothing is attached to the start block yet. Snap your blocks underneath it, then press Run.'); return; }
+    var holes = emptySlots();
+    if (holes.length) {
+      refreshWarnings(holes); ws.centerOnBlock(holes[0].id);
+      con.error('Not ready to run:', (holes.length === 1 ? 'one block has' : holes.length + ' blocks have') + ' an empty slot, shown as ' + core.BLANK + ' in the code.', 'Look for the warning triangle, drop a value into the gap, then press Run again.');
+      return;
+    }
+    setRunning(true); stopReason = null; con.info('Loading Python...');
+    pythonReady.then(function () {
+      con.clear();
+      Sk.configure({
+        output: function (text) { if (stopReason) return; con.write(text); if (con.size() > OUTPUT_LIMIT) { stopReason = 'flood'; Sk.execLimit = 1; } },
+        read: function (path) { if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[path] === undefined) throw "File not found: '" + path + "'"; return Sk.builtinFiles.files[path]; },
+        inputfun: function (prompt) { con.write(prompt); return con.ask().then(function (value) { Sk.execStart = Date.now(); return value; }); },
+        inputfunTakesPrompt: true, __future__: Sk.python3, yieldLimit: 100, killableWhile: true, killableFor: true
+      });
+      Sk.execLimit = Number.POSITIVE_INFINITY; Sk.execStart = Date.now();   // Stop works by shrinking this limit, so reset it for every run
+      Sk.builtinFiles.files['src/lib/pbfiles.py'] = PB_VFS(files);
+      Sk.sysmodules = new Sk.builtin.dict([]);
+      var fsModule = Sk.importModule('pbfiles', false, false);
+      Sk.builtins.open = fsModule.$d.open;
+      slowTimer = setTimeout(function () { if (running && !con.waiting()) con.info('\nStill running... press Stop if your loop never ends.'); }, 10000);
+      return Sk.misceval.asyncToPromise(function () { return Sk.importMainWithBody('<stdin>', false, code, true); })
+        .then(function () { con.info('\nProgram finished.'); }, function (err) {
+          if (stopReason === 'flood') con.error('Stopped:', 'your program printed a huge amount of output.', 'Does the loop ever end? Something inside it must change the condition.');
+          else if (stopReason) con.info('\nStopped.');
+          else { var d = describe(err); con.error(d.title, d.message, d.hint); renderCode(d.line); }
+        })
+        .then(function () { try { files = Sk.ffi.remapToJs(fsModule.$d._files); } catch (e) { /* keep the old files */ } if (!$('files').hidden) renderFiles(); });
+    }, function () {
+      con.clear(); con.error('Python could not load.', 'The Python engine is downloaded the first time you press Run, and the download failed.', 'Check the internet connection, then reload the page. Your code is still in the Python panel to copy.');
+    }).then(function () { clearTimeout(slowTimer); setRunning(false); }, function (e) { clearTimeout(slowTimer); setRunning(false); con.error('Something went wrong:', String(e)); });
+  }
+  function stop() { if (!running) return; stopReason = stopReason || 'user'; if (window.Sk) Sk.execLimit = 1; con.cancelAsk(); }
+  $('btnRun').onclick = run; $('btnStop').onclick = stop;
+  document.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); } });
+
+  /* ---------------- clear, copy, resize ---------------- */
+  $('btnClear').onclick = function () { var b = $('btnClear'); twoClicks(b, b, 'Delete all blocks?', function () { loadState(core.program([])); }); };
+  $('btnCopy').onclick = function () {
+    var b = $('btnCopy'); function done(ok) { b.textContent = ok ? 'Copied' : 'Select the code and copy it'; setTimeout(function () { b.textContent = 'Copy code'; }, 1600); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(function () { done(true); }, function () { done(false); }); else done(false);
+  };
+  (function () {
+    var handle = $('handle'), app = document.querySelector('.app'), dragging = false;
+    handle.addEventListener('pointerdown', function (e) { dragging = true; handle.classList.add('on'); handle.setPointerCapture(e.pointerId); e.preventDefault(); });
+    handle.addEventListener('pointermove', function (e) { if (!dragging) return; var w = Math.max(300, Math.min(window.innerWidth * 0.6, window.innerWidth - e.clientX)); app.style.setProperty('--side-w', w + 'px'); });
+    handle.addEventListener('pointerup', function () { dragging = false; handle.classList.remove('on'); Blockly.svgResize(ws); });
+  })();
+
+  /* ---------------- start up ---------------- */
+  resetFiles(); selectPane('console'); con.info('Press Run to start your program.'); renderCode();
+  var saved = null; try { saved = JSON.parse(store(STORE) || 'null'); } catch (e) { saved = null; }
+  if (saved && saved.blocks) { try { if (saved.files) files = saved.files; Blockly.serialization.workspaces.load(saved.blocks, ws); setTimeout(function () { dirty = true; }, 200); } catch (e) { ws.clear(); } }
+  if (!ws.getAllBlocks(false).length) { loadState(core.program([])); }
+  document.body.classList.add('ready');
+  return { workspace: ws, run: run, stop: stop, loadState: loadState, content: content, core: core };
+}
+
+/* =====================================================================
+   5. START UP — fetch the libraries (trying a second CDN if the first is
+   blocked), then build the page. Python loads in the background.
+   ===================================================================== */
+(function () {
+  var B = 'blockly@13.2.1', S = 'skulpt@1.2.0/dist/';
+  var SOURCES = {
+    blockly: ['https://cdnjs.cloudflare.com/ajax/libs/blockly/13.2.1/blockly.min.js', 'https://cdn.jsdelivr.net/npm/' + B + '/blockly.min.js', 'https://unpkg.com/' + B + '/blockly.min.js'],
+    python: ['https://cdnjs.cloudflare.com/ajax/libs/blockly/13.2.1/python_compressed.js', 'https://cdn.jsdelivr.net/npm/' + B + '/python_compressed.js', 'https://unpkg.com/' + B + '/python_compressed.js'],
+    skulpt: ['https://cdn.jsdelivr.net/npm/' + S + 'skulpt.min.js', 'https://unpkg.com/' + S + 'skulpt.min.js'],
+    stdlib: ['https://cdn.jsdelivr.net/npm/' + S + 'skulpt-stdlib.js', 'https://unpkg.com/' + S + 'skulpt-stdlib.js']
+  };
+  function fetchScript(urls) {
+    return new Promise(function (resolve, reject) {
+      var i = 0;
+      (function next() {
+        if (i >= urls.length) return reject(new Error('Could not load ' + urls[0]));
+        var s = document.createElement('script'); s.src = urls[i++];
+        s.onload = resolve; s.onerror = function () { s.remove(); next(); };
+        document.head.appendChild(s);
+      })();
+    });
+  }
+  var blocksReady = window.Blockly && window.python ? Promise.resolve() : fetchScript(SOURCES.blockly).then(function () { return fetchScript(SOURCES.python); });
+  var pythonReady = window.Sk ? Promise.resolve() : fetchScript(SOURCES.skulpt).then(function () { return fetchScript(SOURCES.stdlib); });
+  pythonReady.catch(function () {});
+  blocksReady.then(function () { window.PythonBlocks = PB_ui(window.Blockly, window.python, pythonReady); }, function () {
+    document.querySelector('.app').innerHTML = '<p class="fatal"><b>The block editor could not load.</b><br>This page downloads Blockly from the internet, and the download was blocked. Check the connection, or use the offline copy of this page.</p>';
+  });
+})();
+</script>
+</body>
+</html>

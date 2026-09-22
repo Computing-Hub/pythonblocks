@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flowcharts for OCR GCSE Computer Science</title>
+<!--
+  Flowcharts (OCR J277 edition). One self-contained page: no build step, no server.
+  Draw a flowchart and get Python, or type Python and get the flowchart. The Python is run for real
+  in the browser by Skulpt, one shape at a time if you like, with a variable watch and a trace table.
+  Script sections: 1 CORE (parser, generators, layout)  2 CONTENT (examples, symbols)  3 INTERFACE  4 START UP.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F7FB; --surface:#FFFFFF; --surface-2:#EAF0F8; --line:#CBD7E6; --grid:#DCE6F2;
+  --ink:#14213D; --ink-2:#44546F; --ink-3:#6B7A93;
+  --run:#FFD23F; --run-ink:#14213D; --stop:#C92A2A; --focus:#1971C2; --accent:#1971C2;
+  --code-bg:#FFFFFF; --code-ink:#14213D; --code-no:#9AA8BD; --code-hit:#FFF1B8;
+  --con-bg:#101A30; --con-ink:#DCE7F7; --con-dim:#8FA2C0; --con-err:#FF9B9B; --con-in:#FFD23F;
+  --kw:#A61E4D; --fn:#1864AB; --st:#2B7A0B; --nb:#B45309; --cm:#6B7280;
+  --ui:"Atkinson Hyperlegible","Verdana","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code","Consolas","Menlo",monospace;
+  --side-w:clamp(320px,29vw,430px);
+}
+:root[data-theme="dark"]{
+  --paper:#0F1729; --surface:#17213A; --surface-2:#1E2B49; --line:#2C3B5E; --grid:#1B2742;
+  --ink:#E6ECF8; --ink-2:#B5C2DA; --ink-3:#8797B5;
+  --run:#FFD23F; --run-ink:#14213D; --focus:#74C0FC; --accent:#74C0FC;
+  --code-bg:#131D34; --code-ink:#E6ECF8; --code-no:#5C6E90; --code-hit:#4A3F12;
+  --con-bg:#0A1122;
+  --kw:#FF8FB1; --fn:#8CC8FF; --st:#A5E08A; --nb:#FFC078; --cm:#8797B5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+/* Code must look exactly as it is typed: stop the code font joining >= into \2265, != into \2260, == into one long bar */
+*,svg text{font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0,"clig" 0}
+html,body{height:100%}
+body{font-family:var(--ui);font-size:15px;line-height:1.45;color:var(--ink);background:var(--paper);display:grid;grid-template-rows:auto minmax(0,1fr);height:100dvh;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
+
+/* ---------- top bar ---------- */
+.bar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--ink);color:#fff;flex-wrap:wrap}
+:root[data-theme="dark"] .bar{background:#0A1122;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:6px}
+.brand strong{font-size:19px;letter-spacing:-.01em}
+.brand span{font-size:13px;color:#B9C6DC}
+.bar .spacer{flex:1}
+.nb{border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;padding:6px 13px;border-radius:8px;font-weight:700;font-size:14px}
+.nb:hover{background:rgba(255,255,255,.12)}
+.nb[aria-expanded="true"]{background:#fff;color:#14213D;border-color:#fff}
+.nb.quiet{border-color:transparent;font-weight:400;color:#D5DEEE}
+.nb.run{background:var(--run);color:var(--run-ink);border-color:var(--run);padding:6px 20px}
+.nb.run:hover{filter:brightness(1.06)}
+.nb.stop{background:var(--stop);border-color:var(--stop)}
+.nb.armed{background:#FFE3E3;color:#8A1C1C;border-color:#FFE3E3}
+.nb[hidden]{display:none}
+
+/* ---------- main layout ---------- */
+.app{display:grid;grid-template-columns:auto minmax(0,1fr) 7px var(--side-w);min-height:0}
+.drawer{width:clamp(320px,27vw,400px);background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.drawer[hidden]{display:none}
+.drawer{grid-column:1}.stage{grid-column:2}.handle{grid-column:3}.side{grid-column:4}
+.stage{position:relative;min-width:0;min-height:0}
+#blocklyDiv{position:absolute;inset:0}
+.empty{position:absolute;left:50%;top:42%;transform:translate(-30%,-50%);max-width:340px;color:var(--ink-3);font-size:16px;pointer-events:none;text-align:left}
+.empty b{display:block;color:var(--ink-2);font-size:20px;margin-bottom:6px}
+.empty[hidden]{display:none}
+.zoom{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.zoom button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:20px;line-height:1;color:var(--ink-2)}
+.zoom button:hover{background:var(--surface-2)}
+.handle{background:var(--line);cursor:col-resize}
+.handle:hover,.handle.on{background:var(--accent)}
+.side{display:grid;grid-template-rows:minmax(0,1.15fr) minmax(0,1fr);min-width:0;min-height:0;background:var(--surface)}
+.pane{display:flex;flex-direction:column;min-height:0;min-width:0}
+.pane + .pane{border-top:1px solid var(--line)}
+.pane-head{display:flex;align-items:center;gap:4px;padding:6px 10px;background:var(--surface-2);border-bottom:1px solid var(--line);font-weight:700;font-size:14px}
+.pane-head .grow{flex:1}
+.mini{border:1px solid var(--line);background:var(--surface);border-radius:7px;padding:3px 10px;font-size:13px;font-weight:400}
+.mini:hover{background:var(--paper)}
+.tab{border:0;background:transparent;padding:4px 10px;border-radius:7px;font-weight:700;color:var(--ink-3)}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+
+/* ---------- code view ---------- */
+.code{flex:1;overflow:auto;background:var(--code-bg);color:var(--code-ink);font-family:var(--mono);font-size:14px;line-height:1.6;padding:10px 0}
+.ln{display:flex;white-space:pre;padding-right:14px}
+.ln .no{flex:none;width:42px;text-align:right;padding-right:12px;color:var(--code-no);user-select:none}
+.ln.hit{background:var(--code-hit)}
+.code .hint{padding:4px 16px;color:var(--ink-3);font-family:var(--ui);font-size:15px;white-space:normal}
+.kw{color:var(--kw);font-weight:700}.fn{color:var(--fn)}.st{color:var(--st)}.nu{color:var(--nb)}.cm{color:var(--cm);font-style:italic}
+
+/* ---------- console + files ---------- */
+.console{flex:1;overflow:auto;background:var(--con-bg);color:var(--con-ink);font-family:var(--mono);font-size:14px;line-height:1.55;padding:10px 14px;white-space:pre-wrap;word-break:break-word}
+.console .dim{color:var(--con-dim);font-family:var(--ui)}
+.console .err{color:var(--con-err);font-family:var(--ui);white-space:normal;margin-top:6px;display:block}
+.console .err b{color:#fff}
+.console .typed{color:var(--con-in)}
+.console input{font:inherit;color:var(--con-in);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.3);border-radius:5px;padding:1px 6px;min-width:12ch;width:60%}
+.files{flex:1;overflow:auto;padding:10px 12px;background:var(--surface)}
+.files p{color:var(--ink-3);font-size:14px;margin-bottom:10px}
+.file{border:1px solid var(--line);border-radius:9px;margin-bottom:10px;overflow:hidden}
+.file header{display:flex;align-items:center;gap:8px;padding:5px 10px;background:var(--surface-2);font-family:var(--mono);font-size:13px;font-weight:700}
+.file header span{flex:1}
+.file pre{font-family:var(--mono);font-size:13px;padding:8px 10px;white-space:pre-wrap;max-height:160px;overflow:auto}
+.file pre:empty::before{content:"(empty file)";color:var(--ink-3);font-family:var(--ui)}
+[hidden]{display:none !important}
+
+/* ---------- drawer: help + examples ---------- */
+.drawer-head{display:flex;align-items:center;gap:4px;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.drawer-head .grow{flex:1}
+.drawer-body{flex:1;overflow:auto;position:relative;padding:12px 12px 40px}
+.lede{color:var(--ink-2);margin:2px 4px 12px;max-width:44ch}
+.group{font-size:13px;font-weight:700;color:var(--ink-3);margin:16px 4px 6px}
+.topic{display:flex;width:100%;align-items:center;gap:10px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;margin-bottom:6px;font-weight:700}
+.topic:hover{background:var(--paper)}
+.topic i{flex:none;width:10px;height:22px;border-radius:3px;background:var(--c,#888)}
+.topic span{flex:1}
+.topic small{font-weight:400;color:var(--ink-3);display:block;font-size:13.5px}
+.topic::after{content:"+";color:var(--ink-3);font-weight:400;font-size:18px;line-height:1}
+.topic.example::after{content:"";display:none}
+.topic[aria-expanded="true"]{border-radius:10px 10px 0 0;background:var(--surface-2);margin-bottom:0}
+.topic[aria-expanded="true"]::after{content:"\2212"}
+.detail{border:1px solid var(--line);border-top:0;border-radius:0 0 10px 10px;padding:12px 12px 14px;margin-bottom:8px;background:var(--surface)}
+.detail p{margin-bottom:9px;max-width:48ch}
+.detail h4{font-size:13px;color:var(--ink-3);margin:12px 0 4px;font-weight:700}
+.detail pre{font-family:var(--mono);font-size:13px;line-height:1.55;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px;overflow-x:auto;white-space:pre}
+.detail table{border-collapse:collapse;width:100%;font-size:13.5px;margin:4px 0 8px}
+.detail th{text-align:left;color:var(--ink-3);font-size:12.5px;padding:3px 6px;border-bottom:1px solid var(--line)}
+.detail td{padding:4px 6px;border-bottom:1px solid var(--grid);vertical-align:top}
+.detail td code{font-family:var(--mono);font-size:13px;white-space:nowrap}
+.note{background:#FFF6D6;border-left:4px solid var(--run);padding:7px 10px;border-radius:0 8px 8px 0;margin:10px 0 0;font-size:14px;color:#3D3205}
+:root[data-theme="dark"] .note{background:#3A3210;color:#F6E7A8}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.act{border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:8px;padding:6px 12px;font-weight:700;font-size:14px}
+:root[data-theme="dark"] .act{background:var(--run);color:var(--run-ink);border-color:var(--run)}
+.act.ghost{background:transparent;color:var(--ink);border-color:var(--line);font-weight:400}
+.act.armed{background:#FFE3E3;color:#8A1C1C;border-color:#F3B4B4}
+
+/* ---------- toast + modal ---------- */
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-weight:700;z-index:200;max-width:90vw;box-shadow:0 6px 24px rgba(10,20,45,.3)}
+:root[data-theme="dark"] .toast{background:#fff;color:#14213D}
+.veil{position:fixed;inset:0;background:rgba(10,18,36,.55);display:grid;place-items:center;z-index:80;padding:16px}
+.modal{background:var(--surface);color:var(--ink);border-radius:14px;padding:18px;width:min(380px,100%);box-shadow:0 18px 60px rgba(0,0,0,.4)}
+.modal p{margin-bottom:10px;font-weight:700}
+.modal input{width:100%;font:inherit;font-family:var(--mono);padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.modal .actions{justify-content:flex-end}
+.fatal{margin:40px auto;max-width:520px;padding:0 20px}
+
+/* ---------- flowchart canvas ---------- */
+.canvas{position:absolute;inset:0;overflow:auto;padding:0 0 60px;background-color:var(--paper);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.canvas svg{display:block;min-width:100%}
+.canvas.stale svg{opacity:.45}
+.fc-node{cursor:pointer;outline:none}
+.fc-node:hover>rect,.fc-node:hover>polygon,.fc-node:focus-visible>rect,.fc-node:focus-visible>polygon{stroke-width:3.5}
+.fc-node.active>rect,.fc-node.active>polygon{stroke:#F59F00;stroke-width:5;filter:drop-shadow(0 0 6px rgba(255,210,63,.95))}
+.fc-node.error>rect,.fc-node.error>polygon{stroke:#E03131;stroke-width:5}
+.fc-plus{cursor:pointer;opacity:.5;outline:none}
+.fc-plus circle{fill:var(--surface);stroke:var(--ink-2);stroke-width:1.5}
+.fc-plus path{stroke:var(--ink-2);stroke-width:2;fill:none}
+.fc-plus:hover,.fc-plus:focus-visible{opacity:1}
+.fc-plus:hover circle,.fc-plus:focus-visible circle{fill:var(--run);stroke:#14213D}
+.fc-plus:hover path{stroke:#14213D}
+.stage-tools{position:absolute;left:14px;bottom:14px;z-index:5;display:flex;gap:6px}
+.stage-tools button{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:10px;padding:7px 12px;font-size:14px}
+.stage-tools button:hover{background:var(--surface-2)}
+.menu{position:fixed;z-index:90;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 12px 40px rgba(10,20,45,.28);display:grid;gap:2px;width:230px}
+.menu b{font-size:13px;color:var(--ink-3);padding:4px 8px 2px}
+.menu button{display:flex;align-items:center;gap:10px;border:0;background:transparent;text-align:left;padding:7px 8px;border-radius:8px;font-weight:700}
+.menu button:hover,.menu button:focus-visible{background:var(--surface-2)}
+.menu button small{display:block;font-weight:400;color:var(--ink-3);font-size:12.5px}
+.menu svg{flex:none}
+/* ---------- editor ---------- */
+.editor{flex:1;display:flex;flex-direction:column;min-height:0}
+.editor textarea{flex:1;resize:none;border:0;outline:none;background:var(--code-bg);color:var(--code-ink);font-family:var(--mono);font-size:14px;line-height:1.6;padding:10px 14px;tab-size:4;white-space:pre;overflow:auto}
+.editor textarea:focus-visible{outline:3px solid var(--focus);outline-offset:-3px;border-radius:0}
+.status{padding:5px 12px;font-size:13.5px;border-top:1px solid var(--line);background:var(--surface-2);color:var(--ink-2)}
+.status.bad{background:#FFE3E3;color:#8A1C1C}
+:root[data-theme="dark"] .status.bad{background:#4A1D1D;color:#FFC9C9}
+.erl{flex:1;overflow:auto;background:var(--code-bg);font-family:var(--mono);font-size:14px;line-height:1.6;padding:10px 14px;white-space:pre}
+.tablebox{flex:1;overflow:auto;background:var(--surface);padding:10px 12px}
+.tablebox p{color:var(--ink-3);font-size:14px;margin-bottom:8px}
+.tablebox table{border-collapse:collapse;font-family:var(--mono);font-size:13px}
+.tablebox th{position:sticky;top:-10px;background:var(--surface-2);text-align:left;padding:4px 10px;border:1px solid var(--line)}
+.tablebox td{padding:3px 10px;border:1px solid var(--line);white-space:pre}
+.tablebox td.shape{font-family:var(--ui);color:var(--ink-3)}
+select.nb{appearance:auto;background:transparent}
+select.nb option{color:#14213D}
+.symbol{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--surface)}
+.symbol svg{flex:none}
+.symbol b{display:block}
+.symbol p{font-size:14px;color:var(--ink-2)}
+.modal label{display:block;font-size:13.5px;font-weight:700;margin:10px 0 3px}
+.modal small{display:block;color:var(--ink-3);font-size:12.5px;margin-top:3px}
+.modal select{width:100%;font:inherit;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.modal .actions .danger{margin-right:auto;border-color:#F3B4B4;color:#8A1C1C;background:#FFE3E3}
+.modal{width:min(440px,100%)}
+
+@media (max-width:980px){
+  body{overflow:auto;height:auto;min-height:100dvh}
+  .app{grid-template-columns:minmax(0,1fr);grid-auto-rows:auto}
+  .drawer,.stage,.handle,.side{grid-column:1}
+  .drawer{width:100%;max-height:60vh;border-right:0;border-bottom:1px solid var(--line)}
+  .stage{height:62vh}
+  .handle{display:none}
+  .side{grid-template-rows:auto auto}
+  .pane{height:300px}
+}
+@media (prefers-reduced-motion:no-preference){
+  .detail{animation:open .16s ease-out}
+  @keyframes open{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><strong>Flowcharts</strong><span>OCR GCSE Computer Science J277</span></div>
+  <button class="nb" id="btnSymbols" type="button" aria-expanded="false" aria-controls="drawer">Symbols</button>
+  <button class="nb" id="btnExamples" type="button" aria-expanded="false" aria-controls="drawer">Examples</button>
+  <span class="spacer"></span>
+  <button class="nb quiet" id="btnTheme" type="button">Dark mode</button>
+  <button class="nb" id="btnUndo" type="button">Undo</button>
+  <button class="nb" id="btnNew" type="button">New</button>
+  <button class="nb" id="btnSvg" type="button" title="Download the flowchart as a picture">Save picture</button>
+  <select class="nb" id="speed" aria-label="Run speed"><option value="500">Slow</option><option value="120" selected>Fast</option><option value="0">Instant</option></select>
+  <button class="nb" id="btnStep" type="button" title="Run one shape at a time">Step</button>
+  <button class="nb stop" id="btnStop" type="button" hidden>Stop</button>
+  <button class="nb run" id="btnRun" type="button" title="Run (Ctrl + Enter)">Run</button>
+</header>
+
+<main class="app">
+  <aside class="drawer" id="drawer" aria-label="Symbols and examples" hidden>
+    <div class="drawer-head" role="tablist">
+      <button class="tab" id="tabSymbols" type="button" role="tab" aria-selected="false">Symbols</button>
+      <button class="tab" id="tabExamples" type="button" role="tab" aria-selected="false">Examples</button>
+      <span class="grow"></span>
+      <button class="mini" id="btnCloseDrawer" type="button">Close</button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
+
+  <section class="stage" aria-label="Flowchart">
+    <div class="canvas" id="canvas"></div>
+    <div class="stage-tools"><button id="btnAddSub" type="button">Add a sub program</button><button id="btnLabels" type="button" title="Switch what is written inside the shapes">Labels: exam style</button></div>
+    <div class="zoom">
+      <button id="zoomIn" type="button" aria-label="Zoom in">+</button>
+      <button id="zoomOut" type="button" aria-label="Zoom out">&minus;</button>
+    </div>
+  </section>
+
+  <div class="handle" id="handle" aria-hidden="true"></div>
+
+  <section class="side">
+    <div class="pane">
+      <div class="pane-head" role="tablist">
+        <button class="tab" id="tabPython" type="button" role="tab">Python</button>
+        <button class="tab" id="tabErl" type="button" role="tab">OCR reference language</button>
+      </div>
+      <div class="editor" id="panePython"><textarea id="python" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Python code: edit it and the flowchart redraws"></textarea></div>
+      <div class="erl" id="paneErl" hidden><div id="erl"></div></div>
+      <div class="status" id="status" role="status"></div>
+    </div>
+    <div class="pane">
+      <div class="pane-head" role="tablist">
+        <button class="tab" id="tabConsole" type="button" role="tab">Console</button>
+        <button class="tab" id="tabVars" type="button" role="tab">Variables</button>
+        <button class="tab" id="tabTrace" type="button" role="tab">Trace table</button>
+        <span class="grow"></span>
+        <button class="mini" id="btnClearConsole" type="button">Clear</button>
+      </div>
+      <div class="console" id="paneConsole" role="log"><span id="console"></span></div>
+      <div class="tablebox" id="paneVars" hidden></div>
+      <div class="tablebox" id="paneTrace" hidden></div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* =====================================================================
+   1. CORE — the program model, Python <-> model, OCR reference language,
+   and the automatic flowchart layout. Works in the browser and in Node.
+
+   A program is { imports: [names], subs: [sub], main: [stmt] }
+   sub  = { id, name, params, ret, body: [stmt] }        ret '' = procedure
+   stmt = { id, type, ... } where type is one of
+     process {text}            input {name, prompt, cast}     output {expr}
+     call {text}               if {cond, yes:[], no:[]}       while {cond, body:[]}
+     for {name, start, stop, step, body:[]}
+   ===================================================================== */
+function FC_core() {
+  var uid = 1;
+  function nid() { return uid++; }
+
+  /* ---------------- small text helpers ---------------- */
+  // Split code into tokens, keeping strings whole, so operators inside quotes are never touched.
+  function tokens(src) {
+    var out = [], re = /("(?:\\.|[^"\\])*"?|'(?:\\.|[^'\\])*'?)|([A-Za-z_]\w*)|(\*\*|\/\/|==|!=|<=|>=|\s+|.)/g, m;
+    while ((m = re.exec(src))) out.push(m[1] ? { s: m[1], str: true } : m[2] ? { s: m[2], word: true } : { s: m[3] });
+    return out;
+  }
+  /** Python expression -> OCR Exam Reference Language operators. */
+  function erl(expr) {
+    var map = { and: 'AND', or: 'OR', not: 'NOT', '**': '^', '//': 'DIV', '%': 'MOD' };
+    return tokens(expr).map(function (t) { return !t.str && map.hasOwnProperty(t.s) ? map[t.s] : t.s; }).join('').replace(/\brandom\.(randint|uniform)\(/g, 'random(');
+  }
+  function stripComment(line) {
+    var out = '', t = tokens(line), i;
+    for (i = 0; i < t.length; i++) { if (!t[i].str && t[i].s === '#') break; out += t[i].s; }
+    return out.replace(/\s+$/, '');
+  }
+  function splitArgs(src) {   // top-level commas only
+    var parts = [], depth = 0, cur = '';
+    tokens(src).forEach(function (t) {
+      if (!t.str && /^[\(\[\{]$/.test(t.s)) depth++;
+      if (!t.str && /^[\)\]\}]$/.test(t.s)) depth--;
+      if (!t.str && t.s === ',' && depth === 0) { parts.push(cur.trim()); cur = ''; } else cur += t.s;
+    });
+    if (cur.trim()) parts.push(cur.trim());
+    return parts;
+  }
+
+  /* ---------------- Python -> model ---------------- */
+  function ParseError(message, line) { this.message = message; this.line = line; }
+  function parse(source) {
+    var lines = [];
+    source.split('\n').forEach(function (raw, i) {
+      if (/^\s*\t/.test(raw)) throw new ParseError('Use spaces, not tabs, to indent.', i + 1);
+      var text = stripComment(raw);
+      if (text.trim()) lines.push({ indent: /^ */.exec(text)[0].length, text: text.trim(), no: i + 1 });
+    });
+    var pos = 0, prog = { imports: [], subs: [], main: [] };
+
+    function blockAfter(header) {
+      var next = lines[pos];
+      if (!next || next.indent <= header.indent) throw new ParseError('The line after "' + header.text + '" must be indented.', header.no);
+      return block(next.indent, false);
+    }
+    function block(indent, top) {
+      var out = [], ln, m, node;
+      while (pos < lines.length && lines[pos].indent >= indent) {
+        ln = lines[pos];
+        if (ln.indent > indent) throw new ParseError('This line is indented too far.', ln.no);
+        pos++;
+        if ((m = /^import\s+([\w\.]+)$/.exec(ln.text))) {
+          if (!top) throw new ParseError('Put import lines at the top of the program.', ln.no);
+          if (prog.imports.indexOf(m[1]) < 0) prog.imports.push(m[1]);
+        } else if ((m = /^def\s+([A-Za-z_]\w*)\s*\((.*)\)\s*:$/.exec(ln.text))) {
+          if (!top) throw new ParseError('Define sub programs at the left margin, not inside another block.', ln.no);
+          node = { id: nid(), name: m[1], params: splitArgs(m[2]).join(', '), ret: '', body: blockAfter(ln) };
+          var last = node.body[node.body.length - 1];
+          if (last && last.type === 'return') { node.ret = last.expr; node.body.pop(); }
+          node.body.forEach(function check(s) {
+            if (s.type === 'return') throw new ParseError('In this tool, return must be the last line of the function.', s.line);
+            (s.yes || []).concat(s.no || [], s.body || []).forEach(check);
+          });
+          prog.subs.push(node);
+        } else if ((m = /^return\b\s*(.*)$/.exec(ln.text))) {
+          out.push({ type: 'return', expr: m[1], line: ln.no });
+        } else if ((m = /^if\s+(.+):$/.exec(ln.text))) {
+          node = { id: nid(), type: 'if', cond: m[1].trim(), yes: blockAfter(ln), no: [] };
+          out.push(node);
+          var tail = node;
+          while (pos < lines.length && lines[pos].indent === indent && /^(elif\b|else\s*:)/.test(lines[pos].text)) {
+            var h = lines[pos]; pos++;
+            if ((m = /^elif\s+(.+):$/.exec(h.text))) { var nested = { id: nid(), type: 'if', cond: m[1].trim(), yes: blockAfter(h), no: [] }; tail.no = [nested]; tail = nested; }
+            else if (/^else\s*:$/.test(h.text)) { tail.no = blockAfter(h); break; }
+            else throw new ParseError('Check this line: it should look like "elif condition:" or "else:".', h.no);
+          }
+        } else if (/^(elif|else)\b/.test(ln.text)) {
+          throw new ParseError('"' + ln.text.split(/[\s:]/)[0] + '" needs an "if" directly above it at the same indent.', ln.no);
+        } else if ((m = /^while\s+(.+):$/.exec(ln.text))) {
+          out.push({ id: nid(), type: 'while', cond: m[1].trim(), body: blockAfter(ln) });
+        } else if ((m = /^for\s+([A-Za-z_]\w*)\s+in\s+range\s*\((.*)\)\s*:$/.exec(ln.text))) {
+          var a = splitArgs(m[2]);
+          if (a.length < 1 || a.length > 3) throw new ParseError('range() takes 1, 2 or 3 values.', ln.no);
+          out.push({ id: nid(), type: 'for', name: m[1], start: a.length > 1 ? a[0] : '0', stop: a.length > 1 ? a[1] : a[0], step: a[2] || '1', body: blockAfter(ln) });
+        } else if (/^for\b/.test(ln.text)) {
+          throw new ParseError('Only "for variable in range(...):" loops can be drawn. Use an index: for i in range(len(items)).', ln.no);
+        } else if (/^(if|while|def|elif)\b/.test(ln.text) || /:$/.test(ln.text)) {
+          throw new ParseError('Check this line: is the colon in the right place, and is anything missing?', ln.no);
+        } else if ((m = /^([A-Za-z_][\w\[\]\.]*)\s*=\s*(?:(int|float|str)\s*\(\s*)?input\s*\((.*?)\)\s*(\))?$/.exec(ln.text)) && (!!m[2] === !!m[4])) {
+          out.push({ id: nid(), type: 'input', name: m[1], prompt: m[3].trim(), cast: m[2] === 'str' ? '' : (m[2] || '') });
+        } else if ((m = /^print\s*\((.*)\)$/.exec(ln.text))) {
+          out.push({ id: nid(), type: 'output', expr: m[1].trim() });
+        } else if (/^[A-Za-z_]\w*\s*\(.*\)$/.test(ln.text)) {
+          out.push({ id: nid(), type: 'call', text: ln.text });
+        } else {
+          out.push({ id: nid(), type: 'process', text: ln.text });
+        }
+      }
+      return out;
+    }
+    if (lines.length && lines[0].indent > 0) throw new ParseError('The first line must start at the left margin.', lines[0].no);
+    prog.main = block(0, true);
+    if (pos < lines.length) throw new ParseError('This line does not line up with the lines above it.', lines[pos].no);
+    prog.main.forEach(function (s) { if (s.type === 'return') throw new ParseError('return only works inside a function.', s.line); });
+    return prog;
+  }
+
+  /* ---------------- model -> Python (trace = add a hook before every shape) ---------------- */
+  function rangeArgs(s) { return s.step !== '1' ? s.start + ', ' + s.stop + ', ' + s.step : s.start !== '0' ? s.start + ', ' + s.stop : s.stop; }
+  function inputCode(s) { var call = 'input(' + s.prompt + ')'; return s.name + ' = ' + (s.cast ? s.cast + '(' + call + ')' : call); }
+  function toPython(prog, trace) {
+    var out = [];
+    function cond(s) { return trace ? '__at(' + s.id + ') and (' + s.cond + ')' : s.cond; }
+    function body(list, pad) {
+      if (!list.length) { out.push(pad + 'pass'); return; }
+      list.forEach(function (s) { stmt(s, pad, 'if'); });
+    }
+    function stmt(s, pad, kw) {
+      var simple = { process: s.text, call: s.text, input: s.type === 'input' && inputCode(s), output: 'print(' + s.expr + ')' }[s.type];
+      if (simple !== undefined) { if (trace) out.push(pad + '__at(' + s.id + ')'); out.push(pad + simple); return; }
+      if (s.type === 'if') {
+        out.push(pad + kw + ' ' + cond(s) + ':'); body(s.yes, pad + '    ');
+        if (s.no.length === 1 && s.no[0].type === 'if') stmt(s.no[0], pad, 'elif');
+        else if (s.no.length) { out.push(pad + 'else:'); body(s.no, pad + '    '); }
+      } else if (s.type === 'while') { out.push(pad + 'while ' + cond(s) + ':'); body(s.body, pad + '    '); }
+      else if (s.type === 'for') {
+        out.push(pad + 'for ' + s.name + ' in range(' + rangeArgs(s) + '):');
+        if (trace) out.push(pad + '    __at(' + s.id + ')');
+        if (s.body.length || !trace) body(s.body, pad + '    ');
+      }
+    }
+    prog.imports.forEach(function (n) { out.push('import ' + n); });
+    if (prog.imports.length) out.push('');
+    prog.subs.forEach(function (f) {
+      out.push('def ' + f.name + '(' + f.params + '):');
+      if (trace) out.push('    __at(' + f.id + ')');
+      if (f.body.length || (!f.ret && !trace)) body(f.body, '    ');
+      if (f.ret) out.push('    return ' + f.ret);
+      out.push('');
+    });
+    body(prog.main.length ? prog.main : [], '');
+    if (!prog.main.length) out.pop();
+    return out.join('\n').replace(/\n+$/, '') + '\n';
+  }
+
+  /* ---------------- model -> OCR Exam Reference Language ---------------- */
+  function minusOne(x) { return /^-?\d+$/.test(x) ? String(parseInt(x, 10) - 1) : x + ' - 1'; }
+  function plusOne(x) { return /^-?\d+$/.test(x) ? String(parseInt(x, 10) + 1) : x + ' + 1'; }
+  function toERL(prog) {
+    var out = [];
+    function body(list, pad) { list.forEach(function (s) { stmt(s, pad, 'if'); }); }
+    function stmt(s, pad, kw) {
+      if (s.type === 'process' || s.type === 'call') out.push(pad + erl(s.text));
+      else if (s.type === 'input') out.push(pad + erl(inputCode(s)));
+      else if (s.type === 'output') out.push(pad + 'print(' + erl(s.expr) + ')');
+      else if (s.type === 'if') {
+        out.push(pad + kw + ' ' + erl(s.cond) + ' then'); body(s.yes, pad + '    ');
+        if (s.no.length === 1 && s.no[0].type === 'if') { stmt(s.no[0], pad, 'elseif'); return; }
+        if (s.no.length) { out.push(pad + 'else'); body(s.no, pad + '    '); }
+        out.push(pad + 'endif');
+      } else if (s.type === 'while') { out.push(pad + 'while ' + erl(s.cond)); body(s.body, pad + '    '); out.push(pad + 'endwhile'); }
+      else if (s.type === 'for') {
+        var down = /^-/.test(s.step), last = down ? plusOne(s.stop) : minusOne(s.stop);
+        out.push(pad + 'for ' + s.name + ' = ' + erl(s.start) + ' to ' + erl(last) + (s.step !== '1' ? ' step ' + s.step : ''));
+        body(s.body, pad + '    '); out.push(pad + 'next ' + s.name);
+      }
+    }
+    prog.subs.forEach(function (f) {
+      var kind = f.ret ? 'function' : 'procedure';
+      out.push(kind + ' ' + f.name + '(' + f.params + ')'); body(f.body, '    ');
+      if (f.ret) out.push('    return ' + erl(f.ret));
+      out.push('end' + kind, '');
+    });
+    body(prog.main, '');
+    return out.join('\n').replace(/\n+$/, '') + '\n';
+  }
+
+  /* ---------------- what is written inside each shape ---------------- */
+  function label(s, exam) {
+    var f = exam ? erl : function (x) { return x; };
+    switch (s.type) {
+      case 'process': case 'call': return f(s.text);
+      case 'input': return exam ? 'INPUT ' + s.name : inputCode(s);
+      case 'output': return exam ? 'OUTPUT ' + f(s.expr) : 'print(' + s.expr + ')';
+      case 'if': case 'while': return f(s.cond) + (exam ? '?' : '');
+    }
+    return '';
+  }
+
+  /* ---------------- layout: every construct is measured around a vertical axis ---------------- */
+  var CH = 7.9, H = 42, GAP = 34, PADX = 22, MAXCH = 46;
+  function clip(t) { return t.length > MAXCH ? t.slice(0, MAXCH - 1) + '\u2026' : t; }
+  function boxW(text, extra) { return Math.max(110, Math.round(clip(text).length * CH + PADX * 2 + (extra || 0))); }
+
+  /** Draw a whole program. Returns { svg, width, height }. opts: { exam, palette, editable } */
+  function draw(prog, opts) {
+    var P = opts.palette, parts = [], plus = [];
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function line(pts, arrow) {
+      parts.push('<polyline class="fc-line" points="' + pts.map(function (p) { return p[0] + ',' + p[1]; }).join(' ') + '" fill="none" stroke="' + P.line + '" stroke-width="2"' + (arrow ? ' marker-end="url(#fcArrow)"' : '') + '/>');
+    }
+    function text(x, y, t, cls, anchor) { parts.push('<text x="' + x + '" y="' + (y + 4.5) + '" text-anchor="' + (anchor || 'middle') + '" class="' + (cls || 'fc-text') + '" fill="' + P.ink + '">' + esc(t) + '</text>'); }
+    function slot(x, y, list, index) { if (opts.editable) plus.push({ x: x, y: y, list: list, index: index }); }
+    function open(id, kind, full) { parts.push('<g class="fc-node" data-id="' + id + '" data-kind="' + kind + '"' + (opts.editable ? ' tabindex="0" role="button"' : '') + '><title>' + esc(full) + '</title>'); }
+    function shape(kind, cx, y, w, h, id, t) {
+      var x = cx - w / 2, fill = P[kind][0], stroke = P[kind][1], d;
+      open(id, kind, t);
+      if (kind === 'terminal') parts.push('<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="' + h / 2 + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2"/>');
+      else if (kind === 'io') { d = 16; parts.push('<polygon points="' + (x + d) + ',' + y + ' ' + (x + w) + ',' + y + ' ' + (x + w - d) + ',' + (y + h) + ' ' + x + ',' + (y + h) + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2"/>'); }
+      else if (kind === 'decision') parts.push('<polygon points="' + cx + ',' + y + ' ' + (x + w) + ',' + (y + h / 2) + ' ' + cx + ',' + (y + h) + ' ' + x + ',' + (y + h / 2) + '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2"/>');
+      else {
+        parts.push('<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="3" fill="' + fill + '" stroke="' + stroke + '" stroke-width="2"/>');
+        if (kind === 'sub') parts.push('<path d="M' + (x + 10) + ' ' + y + 'v' + h + 'M' + (x + w - 10) + ' ' + y + 'v' + h + '" stroke="' + stroke + '" stroke-width="2"/>');
+      }
+      parts.push('<text x="' + cx + '" y="' + (y + h / 2 + 4.5) + '" text-anchor="middle" class="fc-text" fill="' + (kind === 'terminal' ? P.terminalInk : P.ink) + '">' + esc(clip(t)) + '</text></g>');
+    }
+    var KIND = { process: 'process', input: 'io', output: 'io', call: 'sub' };
+    function dsize(t) { return { w: Math.max(130, Math.round(clip(t).length * CH * 1.25 + 70)), h: 64 }; }
+    function forCond(s) { return s.name + (/^-/.test(s.step) ? ' > ' : ' < ') + s.stop + (opts.exam ? '?' : ''); }
+    function forStep(s) { return s.name + ' = ' + s.name + (/^-/.test(s.step) ? ' - ' + s.step.slice(1) : ' + ' + s.step); }
+
+    // measure -> { l, r, h } : space needed left and right of the axis, and the height
+    function mSeq(list) { var l = 0, r = 0, h = GAP; list.forEach(function (s) { var m = mStmt(s); s._m = m; l = Math.max(l, m.l); r = Math.max(r, m.r); h += m.h + GAP; }); return { l: Math.max(l, 14), r: Math.max(r, 14), h: h }; }
+    function mStmt(s) {
+      var w, d, a, b;
+      if (KIND[s.type]) { w = boxW(label(s, opts.exam), s.type === 'call' ? 20 : s.type === 'process' ? 0 : 24); return { l: w / 2, r: w / 2, h: H, w: w }; }
+      if (s.type === 'if') {
+        d = dsize(label(s, opts.exam)); a = mSeq(s.yes); b = mSeq(s.no);
+        var ya = Math.max(d.w / 2 + 34, a.l + 22), na = Math.max(d.w / 2 + 34, b.r + 22);
+        return { l: na + b.l, r: ya + a.r, h: d.h + Math.max(a.h, b.h) + 18, d: d, a: a, b: b, ya: ya, na: na };
+      }
+      var pre = s.type === 'for', cond = pre ? forCond(s) : label(s, opts.exam), inner, extra = 0, wi = 0, ws = 0;
+      d = dsize(cond); inner = mSeq(s.body);
+      if (pre) { wi = boxW(s.name + ' = ' + s.start); ws = boxW(forStep(s)); extra = H + GAP; inner = { l: Math.max(inner.l, ws / 2), r: Math.max(inner.r, ws / 2), h: inner.h + H + GAP }; }
+      var side = Math.max(d.w / 2, inner.l, inner.r, wi / 2) + 26;
+      return { l: side, r: side, h: extra + d.h + inner.h + 30, d: d, inner: inner, side: side, wi: wi, ws: ws, cond: cond };
+    }
+    // place
+    function pSeq(list, cx, y) {
+      var y0 = y;
+      list.forEach(function (s, i) { slot(cx, y + GAP / 2, list, i); line([[cx, y], [cx, y + GAP]], true); y += GAP; pStmt(s, cx, y); y += s._m.h; });
+      slot(cx, y + GAP / 2, list, list.length);
+      return y + GAP - y0;   // caller draws the last connector
+    }
+    function pStmt(s, cx, y) {
+      var m = s._m, t = label(s, opts.exam), full = label(s, false);
+      if (KIND[s.type]) { shape(KIND[s.type], cx, y, m.w, H, s.id, t); return; }
+      if (s.type === 'if') {
+        var mid = y + m.d.h / 2, top = y + m.d.h, yx = cx + m.ya, nx = cx - m.na, join = y + m.h;
+        shape('decision', cx, y, m.d.w, m.d.h, s.id, t);
+        line([[cx + m.d.w / 2, mid], [yx, mid], [yx, top]]); text(cx + m.d.w / 2 + 6, mid - 12, 'Yes', 'fc-yn', 'start');
+        line([[cx - m.d.w / 2, mid], [nx, mid], [nx, top]]); text(cx - m.d.w / 2 - 6, mid - 12, 'No', 'fc-yn', 'end');
+        var ha = pSeq(s.yes, yx, top), hb = pSeq(s.no, nx, top);
+        line([[yx, top + ha - GAP], [yx, join], [cx + 1, join]], true); line([[nx, top + hb - GAP], [nx, join], [cx - 1, join]], true);
+        return;
+      }
+      // loops: No leaves to the right and rejoins underneath; the body returns up the left side
+      var yy = y;
+      if (s.type === 'for') { shape('process', cx, yy, m.wi, H, s.id + 'a', s.name + ' = ' + s.start); line([[cx, yy + H], [cx, yy + H + GAP]], true); yy += H + GAP; }
+      var dm = yy + m.d.h / 2, db = yy + m.d.h, bottom = y + m.h, lx = cx - m.side, rx = cx + m.side, back = yy - GAP / 2;
+      shape('decision', cx, yy, m.d.w, m.d.h, s.id, m.cond); text(cx + 8, db + 12, 'Yes', 'fc-yn', 'start'); text(cx + m.d.w / 2 + 6, dm - 12, 'No', 'fc-yn', 'start');
+      var hb2 = pSeq(s.body, cx, db), end = db + hb2 - GAP;
+      if (s.type === 'for') { line([[cx, end], [cx, end + GAP]], true); shape('process', cx, end + GAP, m.ws, H, s.id + 'b', forStep(s)); end += GAP + H; }
+      line([[cx, end], [cx, end + 14], [lx, end + 14], [lx, back], [cx - 1, back]], true);
+      line([[cx + m.d.w / 2, dm], [rx, dm], [rx, bottom], [cx + 1, bottom]], true);
+    }
+    function chart(list, startText, endText, startId, x0, y0) {
+      var m = mSeq(list), ws = boxW(startText, 16), we = boxW(endText, 16), l = Math.max(m.l, ws / 2, we / 2), r = Math.max(m.r, ws / 2, we / 2), cx = x0 + l, y = y0;
+      shape('terminal', cx, y, ws, H, startId, startText); y += H;
+      var h = pSeq(list, cx, y); line([[cx, y + h - GAP], [cx, y + h]], true); y += h;
+      shape('terminal', cx, y, we, H, startId + 'e', endText);
+      return { w: l + r, h: y + H - y0 };
+    }
+
+    var x = 40, maxH = 0, c = chart(prog.main, 'Start', 'Stop', 'main', x, 30);
+    x += c.w + 70; maxH = c.h;
+    prog.subs.forEach(function (f) {
+      c = chart(f.body, f.name + '(' + f.params + ')', f.ret ? 'Return ' + (opts.exam ? erl(f.ret) : f.ret) : 'Return', 'sub' + f.id, x, 30);
+      x += c.w + 70; maxH = Math.max(maxH, c.h);
+    });
+    var W = Math.round(x - 30), Ht = Math.round(maxH + 60);
+    var plusSvg = plus.map(function (p, i) { return '<g class="fc-plus" data-slot="' + i + '" tabindex="0" role="button" aria-label="Add a shape here"><circle cx="' + p.x + '" cy="' + p.y + '" r="9"/><path d="M' + (p.x - 4.5) + ' ' + p.y + 'h9M' + p.x + ' ' + (p.y - 4.5) + 'v9"/></g>'; }).join('');
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + Ht + '" width="' + W + '" height="' + Ht + '">' +
+      '<defs><marker id="fcArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="' + P.line + '"/></marker>' +
+      '<style>text{font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0}.fc-text{font:600 13px "JetBrains Mono",Consolas,Menlo,monospace}.fc-yn{font:700 12px Verdana,sans-serif}</style></defs>' + parts.join('') + plusSvg + '</svg>';
+    return { svg: svg, width: W, height: Ht, slots: plus };
+  }
+
+  /* ---------------- finding things in the model ---------------- */
+  function find(prog, id) {
+    var hit = null;
+    function walk(list) { list.forEach(function (s, i) { if (String(s.id) === String(id)) hit = { node: s, list: list, index: i }; ['yes', 'no', 'body'].forEach(function (k) { if (s[k]) walk(s[k]); }); }); }
+    walk(prog.main); prog.subs.forEach(function (f) { walk(f.body); });
+    return hit;
+  }
+  function renumber(prog) { // fresh ids after loading a snapshot
+    function walk(list) { list.forEach(function (s) { s.id = nid(); ['yes', 'no', 'body'].forEach(function (k) { if (s[k]) walk(s[k]); }); }); }
+    walk(prog.main); prog.subs.forEach(function (f) { f.id = nid(); walk(f.body); });
+    return prog;
+  }
+  function blank(type) {
+    return { process: { type: 'process', text: 'total = 0' }, input: { type: 'input', name: 'number', prompt: '"Enter a number: "', cast: 'int' }, output: { type: 'output', expr: '"Hello"' },
+      call: { type: 'call', text: 'showMenu()' }, 'if': { type: 'if', cond: 'number > 10', yes: [], no: [] }, 'while': { type: 'while', cond: 'number != 0', body: [] },
+      'for': { type: 'for', name: 'i', start: '0', stop: '5', step: '1', body: [] } }[type];
+  }
+
+  return { parse: parse, ParseError: ParseError, toPython: toPython, toERL: toERL, erl: erl, label: label, draw: draw, find: find, renumber: renumber, blank: blank, nid: nid };
+}
+
+/* =====================================================================
+   2. CONTENT — examples (plain Python: the tool draws the flowchart from it)
+   and the symbol guide. To add an example, add { title, about, code }.
+   ===================================================================== */
+function FC_content() {
+  var EXAMPLES = [
+    { group: 'Sequence', items: [
+      { title: 'Area of a rectangle', about: 'Input, process, output: no decisions at all.', code: 'width = int(input("Width: "))\nheight = int(input("Height: "))\narea = width * height\nprint("Area:", area)\n' } ] },
+    { group: 'Selection', items: [
+      { title: 'Pass or fail', about: 'One decision, two branches that join again.', code: 'mark = int(input("Mark out of 100: "))\nif mark >= 40:\n    print("Pass")\nelse:\n    print("Not yet")\n' },
+      { title: 'Grade boundaries', about: 'elif becomes a decision inside the No branch.', code: 'mark = int(input("Mark out of 100: "))\nif mark >= 80:\n    grade = "Distinction"\nelif mark >= 60:\n    grade = "Merit"\nelif mark >= 40:\n    grade = "Pass"\nelse:\n    grade = "Ungraded"\nprint(grade)\n' },
+      { title: 'Even or odd', about: 'MOD in a decision.', code: 'number = int(input("Whole number: "))\nif number % 2 == 0:\n    print("Even")\nelse:\n    print("Odd")\n' } ] },
+    { group: 'Iteration: condition-controlled', items: [
+      { title: 'Password check', about: 'The arrow that loops back is the while loop.', code: 'password = input("Password: ")\nwhile password != "letmein":\n    print("Wrong password")\n    password = input("Password: ")\nprint("Access granted")\n' },
+      { title: 'Add until zero', about: 'A running total that stops on a special value.', code: 'total = 0\nnumber = int(input("Number (0 to stop): "))\nwhile number != 0:\n    total = total + number\n    number = int(input("Number (0 to stop): "))\nprint("Total:", total)\n' } ] },
+    { group: 'Iteration: count-controlled', items: [
+      { title: 'Times table', about: 'A for loop drawn as start value, test and step.', code: 'table = int(input("Which times table? "))\nfor i in range(1, 13):\n    answer = i * table\n    print(i, "x", table, "=", answer)\n' },
+      { title: 'Countdown', about: 'A negative step counts down.', code: 'for i in range(5, 0, -1):\n    print(i)\nprint("Lift off!")\n' },
+      { title: 'Mean of five numbers', about: 'Loop, running total, then a calculation.', code: 'total = 0\nfor count in range(5):\n    number = float(input("Enter a number: "))\n    total = total + number\nmean = total / 5\nprint("Mean:", mean)\n' } ] },
+    { group: 'Combining constructs', items: [
+      { title: 'Highest of five numbers', about: 'A decision inside a loop. Good for a trace table.', code: 'highest = 0\nfor count in range(5):\n    number = int(input("Enter a number: "))\n    if number > highest:\n        highest = number\nprint("Highest:", highest)\n' },
+      { title: 'FizzBuzz', about: 'Nested decisions inside a loop.', code: 'for n in range(1, 16):\n    if n % 15 == 0:\n        print("FizzBuzz")\n    elif n % 3 == 0:\n        print("Fizz")\n    elif n % 5 == 0:\n        print("Buzz")\n    else:\n        print(n)\n' },
+      { title: 'Guess the number', about: 'Random number, loop, three-way decision and a counter.', code: 'import random\n\nsecret = random.randint(1, 20)\nguess = 0\ntries = 0\nwhile guess != secret:\n    guess = int(input("Your guess (1 to 20): "))\n    tries = tries + 1\n    if guess < secret:\n        print("Too low")\n    elif guess > secret:\n        print("Too high")\nprint("Correct! Tries:", tries)\n' },
+      { title: 'Linear search', about: 'Search an array one item at a time.', code: 'names = ["Ana", "Ben", "Caz", "Dev"]\ntarget = input("Who are you looking for? ")\nfound = False\nfor i in range(len(names)):\n    if names[i] == target:\n        found = True\n        print("Found at index", i)\nif not found:\n    print("Not in the list")\n' } ] },
+    { group: 'Sub programs', items: [
+      { title: 'Procedure', about: 'The sub program symbol calls a separate flowchart.', code: 'def drawLine(length):\n    print("-" * length)\n\ndrawLine(20)\nprint("HIGH SCORES")\ndrawLine(20)\n' },
+      { title: 'Function', about: 'A function ends by returning a value.', code: 'def area(width, height):\n    result = width * height\n    return result\n\nroom = area(5, 3)\nprint("Room:", room)\nprint("Hall:", area(10, 2))\n' } ] }
+  ];
+  var SYMBOLS = [
+    { kind: 'terminal', name: 'Terminal', text: 'Start', what: 'The start or the end of the algorithm. Every flowchart has one Start and finishes at a Stop. A sub program starts with its name and ends with Return.' },
+    { kind: 'io', name: 'Input / Output', text: 'INPUT age', what: 'Data going into the algorithm (from the user) or coming out of it (on to the screen). In Python: input() and print().' },
+    { kind: 'process', name: 'Process', text: 'total = 0', what: 'An instruction that does something: a calculation, or storing a value in a variable.' },
+    { kind: 'decision', name: 'Decision', text: 'age >= 18?', what: 'A question with a Yes or No answer. Two arrows leave it, and each must be labelled. Decisions make selection (if) and iteration (loops).' },
+    { kind: 'sub', name: 'Sub program', text: 'showMenu()', what: 'Calls a procedure or function that is drawn as its own separate flowchart.' },
+    { kind: 'line', name: 'Line', text: '', what: 'Arrows join the symbols and show the order to follow them in. An arrow that goes back up to an earlier decision makes a loop.' }
+  ];
+  return { EXAMPLES: EXAMPLES, SYMBOLS: SYMBOLS, START: EXAMPLES[1].items[0].code };
+}
+
+/* =====================================================================
+   3. INTERFACE — canvas editing, two-way sync with Python, runner
+   The Python text is the single source of truth: chart edits rewrite it,
+   typing re-draws the chart.
+   ===================================================================== */
+function FC_ui(pythonReady) {
+  var core = FC_core(), content = FC_content(), STORE = 'flowchart-ocr:v1';
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function store(key, value) { try { if (value === undefined) return localStorage.getItem(key); localStorage.setItem(key, value); } catch (e) { return null; } }
+
+  var PALETTES = {
+    light: { line: '#14213D', ink: '#14213D', terminalInk: '#FFFFFF', terminal: ['#14213D', '#14213D'], io: ['#FCE4EC', '#C2255C'], process: ['#E3F0FC', '#1971C2'], decision: ['#FDEBDD', '#C2410C'], sub: ['#F5E3F8', '#86198F'] },
+    dark: { line: '#B5C2DA', ink: '#F1F5FC', terminalInk: '#14213D', terminal: ['#E6ECF8', '#E6ECF8'], io: ['#4A1730', '#F783AC'], process: ['#12315A', '#74C0FC'], decision: ['#4A2410', '#FFA94D'], sub: ['#3B1245', '#E599F7'] }
+  };
+  var theme = store('pb-theme') === 'dark' ? 'dark' : 'light', exam = store('fc-labels') !== 'python', zoom = 1;
+  document.documentElement.setAttribute('data-theme', theme);
+
+  var prog = { imports: [], subs: [], main: [] }, parseOk = true, slots = [], undo = [], running = false;
+  var editor = $('python');
+
+  /* ---------------- drawing ---------------- */
+  function render() {
+    var d = core.draw(prog, { exam: exam, palette: PALETTES[theme], editable: true });
+    slots = d.slots;
+    $('canvas').innerHTML = d.svg;
+    var svg = $('canvas').firstChild; svg.setAttribute('width', d.width * zoom); svg.setAttribute('height', d.height * zoom);
+    $('erl').innerHTML = hl(core.toERL(prog));
+  }
+  function hl(code) {
+    var kw = /^(if|then|elseif|else|endif|for|to|step|next|while|endwhile|procedure|endprocedure|function|endfunction|return|AND|OR|NOT|MOD|DIV|True|False)$/;
+    return code.split(/("(?:\\.|[^"\\])*"|\b[A-Za-z_]\w*\b)/).map(function (p) { return p.charAt(0) === '"' ? '<span class="st">' + esc(p) + '</span>' : kw.test(p) ? '<span class="kw">' + p + '</span>' : esc(p); }).join('');
+  }
+  function status(text, bad) { var s = $('status'); s.textContent = text; s.className = 'status' + (bad ? ' bad' : ''); $('canvas').classList.toggle('stale', !!bad); }
+
+  /* ---------------- the two directions ---------------- */
+  function fromChart() {            // the chart changed -> rewrite the Python
+    undo.push(editor.value); if (undo.length > 60) undo.shift();
+    editor.value = core.toPython(prog); parseOk = true;
+    render(); status('Python updated from the flowchart.'); save();
+  }
+  function fromCode(quiet) {        // the Python changed -> redraw the chart
+    try { prog = core.parse(editor.value); parseOk = true; render(); if (!quiet) status('Flowchart updated from the Python.'); }
+    catch (e) { if (!(e instanceof core.ParseError)) throw e; parseOk = false; status('Line ' + e.line + ': ' + e.message, true); }
+    save();
+  }
+  function setCode(code, message) { undo.push(editor.value); editor.value = code; fromCode(true); status(message || 'Ready.'); mark(null); if (!running) { con.clear(); con.info('Press Run, or Step to go one shape at a time.'); } }
+  function save() { store(STORE, editor.value); }
+  var typing = null;
+  editor.addEventListener('input', function () { clearTimeout(typing); typing = setTimeout(fromCode, 350); });
+  editor.addEventListener('keydown', function (e) {
+    if (e.key === 'Tab') { e.preventDefault(); var s = editor.selectionStart; editor.setRangeText('    ', s, editor.selectionEnd, 'end'); editor.dispatchEvent(new Event('input')); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') return;
+    e.stopPropagation();
+  });
+
+  /* ---------------- dialogs ---------------- */
+  function form(title, fields, values, canDelete) {
+    return new Promise(function (resolve) {
+      var veil = el('div', 'veil'), box = el('div', 'modal'), inputs = {}, row = el('div', 'actions');
+      box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.appendChild(el('p', null, title));
+      fields.forEach(function (f) {
+        var lab = el('label', null, f.label), inp;
+        if (f.options) { inp = el('select'); f.options.forEach(function (o) { var op = el('option', null, o[1]); op.value = o[0]; inp.appendChild(op); }); }
+        else { inp = el('input'); inp.setAttribute('spellcheck', 'false'); inp.setAttribute('autocapitalize', 'off'); inp.setAttribute('autocomplete', 'off'); }
+        inp.value = values[f.key]; lab.appendChild(inp); if (f.hint) lab.appendChild(el('small', null, f.hint)); box.appendChild(lab); inputs[f.key] = inp;
+      });
+      function done(result) { veil.remove(); resolve(result); }
+      if (canDelete) { var del = el('button', 'act danger', 'Delete shape'); del.onclick = function () { done('delete'); }; row.appendChild(del); }
+      var no = el('button', 'act ghost', 'Cancel'); no.onclick = function () { done(null); }; row.appendChild(no);
+      var ok = el('button', 'act', 'OK'); ok.onclick = function () { var out = {}, k; for (k in inputs) out[k] = inputs[k].value.trim(); done(out); }; row.appendChild(ok);
+      box.appendChild(row); veil.appendChild(box); document.body.appendChild(veil);
+      veil.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') ok.click(); if (e.key === 'Escape') done(null); });
+      veil.addEventListener('mousedown', function (e) { if (e.target === veil) done(null); });
+      setTimeout(function () { var first = box.querySelector('input,select'); (first || ok).focus(); if (first && first.select) first.select(); }, 30);
+    });
+  }
+  var FORMS = {
+    process: ['Process', [{ key: 'text', label: 'Instruction', hint: 'A Python statement, for example  total = total + number' }]],
+    input: ['Input', [{ key: 'name', label: 'Store the answer in variable' }, { key: 'prompt', label: 'Prompt shown to the user', hint: 'Keep the quotes, for example  "Enter your age: "' }, { key: 'cast', label: 'Data type', options: [['', 'string (text)'], ['int', 'integer: int()'], ['float', 'real: float()']] }]],
+    output: ['Output', [{ key: 'expr', label: 'What to display', hint: 'Text in quotes, a variable, or several values separated by commas' }]],
+    call: ['Sub program call', [{ key: 'text', label: 'Call', hint: 'The sub program name with its arguments, for example  greet("Sam", 3)' }]],
+    'if': ['Decision', [{ key: 'cond', label: 'Condition (a question with a Yes or No answer)', hint: 'For example  mark >= 40   or   answer == "yes" and tries < 3' }]],
+    'while': ['Loop: repeat while the answer is Yes', [{ key: 'cond', label: 'Condition', hint: 'The loop repeats for as long as this is True' }]],
+    'for': ['Count-controlled loop', [{ key: 'name', label: 'Counter variable' }, { key: 'start', label: 'Start at' }, { key: 'stop', label: 'Stop before', hint: 'range() stops before this value: 1 to 12 is  start 1, stop before 13' }, { key: 'step', label: 'Step', hint: 'Use -1 to count down' }]]
+  };
+  function editNode(id, isNew) {
+    var hit = core.find(prog, parseInt(id, 10)); if (!hit) return;
+    var f = FORMS[hit.node.type];
+    form(f[0], f[1], hit.node, true).then(function (r) {
+      if ((r === null || r === 'delete') && isNew) { editor.value = undo.pop(); fromCode(true); status('Nothing was added.'); return; }
+      if (r === 'delete') { hit.list.splice(hit.index, 1); fromChart(); return; }
+      if (!r) return;
+      var k, empty = false; for (k in r) if (k !== 'cast' && r[k] === '') empty = true;
+      if (empty) { status('Nothing was changed: a box was left empty.', true); return; }
+      for (k in r) hit.node[k] = r[k];
+      fromChart(); if (isNew) undo.pop();   // adding a shape is one undo step, not two
+    });
+  }
+  function editSub(f, isNew) {
+    form(isNew ? 'New sub program' : 'Sub program', [{ key: 'name', label: 'Name' }, { key: 'params', label: 'Parameters', hint: 'Separate with commas. Leave empty for none.' }, { key: 'ret', label: 'Value to return', hint: 'Fill this in to make a function. Leave it empty for a procedure.' }], f, !isNew).then(function (r) {
+      if (r === 'delete') { prog.subs.splice(prog.subs.indexOf(f), 1); fromChart(); return; }
+      if (!r) return;
+      r.name = r.name.replace(/\W/g, '') || 'mySub';
+      f.name = r.name; f.params = r.params; f.ret = r.ret;
+      if (isNew) prog.subs.push(f);
+      fromChart();
+    });
+  }
+
+  /* ---------------- add-a-shape menu ---------------- */
+  var MENU = [['input', 'io', 'Input', 'get data from the user'], ['output', 'io', 'Output', 'show data on screen'], ['process', 'process', 'Process', 'calculate or store a value'], ['if', 'decision', 'Decision', 'selection: if, else'],
+    ['while', 'decision', 'While loop', 'condition-controlled iteration'], ['for', 'decision', 'For loop', 'count-controlled iteration'], ['call', 'sub', 'Sub program', 'call a procedure or function']];
+  function icon(kind, w, h, text) {
+    var P = PALETTES[theme], c = P[kind] || P.process, s = 'fill="' + c[0] + '" stroke="' + c[1] + '" stroke-width="2"', body;
+    if (kind === 'terminal') body = '<rect x="2" y="2" width="' + (w - 4) + '" height="' + (h - 4) + '" rx="' + (h / 2 - 2) + '" ' + s + '/>';
+    else if (kind === 'io') body = '<polygon points="' + (h / 3 + 2) + ',2 ' + (w - 2) + ',2 ' + (w - h / 3 - 2) + ',' + (h - 2) + ' 2,' + (h - 2) + '" ' + s + '/>';
+    else if (kind === 'decision') body = '<polygon points="' + w / 2 + ',2 ' + (w - 2) + ',' + h / 2 + ' ' + w / 2 + ',' + (h - 2) + ' 2,' + h / 2 + '" ' + s + '/>';
+    else if (kind === 'line') body = '<path d="M' + w / 2 + ' 3V' + (h - 9) + '" stroke="' + P.line + '" stroke-width="2"/><path d="M' + (w / 2 - 6) + ' ' + (h - 12) + 'L' + w / 2 + ' ' + (h - 2) + 'L' + (w / 2 + 6) + ' ' + (h - 12) + 'z" fill="' + P.line + '"/>';
+    else body = '<rect x="2" y="2" width="' + (w - 4) + '" height="' + (h - 4) + '" rx="3" ' + s + '/>' + (kind === 'sub' ? '<path d="M' + (w * 0.14) + ' 2V' + (h - 2) + 'M' + (w * 0.86) + ' 2V' + (h - 2) + '" stroke="' + c[1] + '" stroke-width="2"/>' : '');
+    if (text) body += '<text x="' + w / 2 + '" y="' + (h / 2 + 4) + '" text-anchor="middle" style="font:600 11px var(--mono)" fill="' + (kind === 'terminal' ? P.terminalInk : P.ink) + '">' + esc(text) + '</text>';
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true">' + body + '</svg>';
+  }
+  function closeMenu() { var m = document.querySelector('.menu'); if (m) m.remove(); }
+  function openMenu(slot, x, y) {
+    closeMenu();
+    var m = el('div', 'menu'); m.appendChild(el('b', null, 'Add a shape here'));
+    MENU.forEach(function (it) {
+      var b = el('button'); b.type = 'button'; b.innerHTML = icon(it[1], 40, 24) + '<span>' + it[2] + '<small>' + it[3] + '</small></span>';
+      b.onclick = function () { closeMenu(); var node = core.blank(it[0]); node.id = core.nid(); slot.list.splice(slot.index, 0, node); fromChart(); editNode(node.id, true); };
+      m.appendChild(b);
+    });
+    document.body.appendChild(m);
+    m.style.left = Math.max(8, Math.min(x + 14, window.innerWidth - 246)) + 'px'; m.style.top = Math.max(8, Math.min(y - 20, window.innerHeight - m.offsetHeight - 8)) + 'px';
+    m.querySelector('button').focus();
+  }
+  document.addEventListener('mousedown', function (e) { if (!e.target.closest || !e.target.closest('.menu')) closeMenu(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMenu(); });
+
+  function canvasAction(target, x, y) {
+    if (running) return;
+    if (!parseOk) { status('Fix the Python first: the flowchart cannot be edited while the code has a mistake.', true); return; }
+    var plus = target.closest('.fc-plus'), node = target.closest('.fc-node');
+    if (plus) { openMenu(slots[+plus.getAttribute('data-slot')], x, y); return; }
+    if (!node) return;
+    var id = node.getAttribute('data-id'), m;
+    if ((m = /^sub(\d+)/.exec(id))) { var f = prog.subs.filter(function (s) { return s.id === +m[1]; })[0]; if (f) editSub(f, false); }
+    else if (/^\d/.test(id)) editNode(id, false);
+  }
+  $('canvas').addEventListener('click', function (e) { canvasAction(e.target, e.clientX, e.clientY); });
+  $('canvas').addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); var r = e.target.getBoundingClientRect(); canvasAction(e.target, r.right, r.top + r.height / 2); } });
+  $('btnAddSub').onclick = function () { if (!running && parseOk) editSub({ id: core.nid(), name: 'showMenu', params: '', ret: '', body: [] }, true); };
+  $('zoomIn').onclick = function () { zoom = Math.min(2, zoom + 0.15); render(); };
+  $('zoomOut').onclick = function () { zoom = Math.max(0.4, zoom - 0.15); render(); };
+
+  /* ---------------- top bar ---------------- */
+  function setLabels() { $('btnLabels').textContent = exam ? 'Labels: exam style' : 'Labels: Python'; }
+  $('btnLabels').onclick = function () { exam = !exam; store('fc-labels', exam ? 'exam' : 'python'); setLabels(); render(); };
+  function setThemeLabel() { $('btnTheme').textContent = theme === 'dark' ? 'Light mode' : 'Dark mode'; }
+  $('btnTheme').onclick = function () { theme = theme === 'dark' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', theme); store('pb-theme', theme); setThemeLabel(); render(); renderSymbols(); };
+  $('btnUndo').onclick = function () { if (running || !undo.length) return; editor.value = undo.pop(); fromCode(true); status('Undone.'); };
+  $('btnNew').onclick = function () { if (!running) setCode('', 'New flowchart. Click a + on the arrow to add your first shape.'); };
+  $('btnSvg').onclick = function () {
+    var d = core.draw(prog, { exam: exam, palette: PALETTES.light, editable: false });
+    var a = el('a'); a.href = URL.createObjectURL(new Blob([d.svg], { type: 'image/svg+xml' })); a.download = 'flowchart.svg'; document.body.appendChild(a); a.click(); a.remove();
+    status('Saved flowchart.svg: it opens in a browser and drops into Word, Docs or PowerPoint.');
+  };
+
+  /* ---------------- drawer ---------------- */
+  var symBox = el('div'), exBox = el('div'), view = null;
+  $('drawerBody').appendChild(symBox); $('drawerBody').appendChild(exBox);
+  function renderSymbols() {
+    symBox.innerHTML = '';
+    symBox.appendChild(el('p', 'lede', 'The six flowchart symbols in the OCR J277 specification. Click any + on an arrow to add one; click a shape to change it.'));
+    content.SYMBOLS.forEach(function (s) { var card = el('div', 'symbol'), txt = el('div'); card.innerHTML = icon(s.kind, 118, 44, s.text); txt.appendChild(el('b', null, s.name)); txt.appendChild(el('p', null, s.what)); card.appendChild(txt); symBox.appendChild(card); });
+    symBox.appendChild(el('h3', 'group', 'The three constructs'));
+    [['Sequence', 'Shapes one after another, joined by arrows. No decisions.', 0, 0], ['Selection', 'A decision whose Yes and No paths both carry on downwards and join up again.', 1, 0], ['Iteration', 'A decision with a path that loops back up to it. The other path leaves the loop.', 2, 0]].forEach(function (c) {
+      var b = el('button', 'topic example'), lab = el('span'); b.type = 'button'; b.style.setProperty('--c', ['#1971C2', '#C2410C', '#4C51BF'][c[2]]); b.appendChild(el('i')); lab.textContent = c[0]; lab.appendChild(el('small', null, c[1] + ' Click to see one.')); b.appendChild(lab);
+      b.onclick = function () { var ex = content.EXAMPLES[c[2]].items[c[3]]; if (!running) setCode(ex.code, 'Loaded: ' + ex.title + '.'); }; symBox.appendChild(b);
+    });
+  }
+  function renderExamples() {
+    exBox.appendChild(el('p', 'lede', 'Each example loads as a flowchart and as Python. Run it, step through it, then change it.'));
+    var tint = ['#1971C2', '#C2410C', '#4C51BF', '#4C51BF', '#0F766E', '#86198F'];
+    content.EXAMPLES.forEach(function (g, gi) {
+      exBox.appendChild(el('h3', 'group', g.group));
+      g.items.forEach(function (ex) {
+        var b = el('button', 'topic example'), lab = el('span'); b.type = 'button'; b.style.setProperty('--c', tint[gi % tint.length]); b.appendChild(el('i')); lab.textContent = ex.title; lab.appendChild(el('small', null, ex.about)); b.appendChild(lab);
+        b.onclick = function () { if (!running) setCode(ex.code, 'Loaded: ' + ex.title + '. Undo brings back your previous flowchart.'); };
+        exBox.appendChild(b);
+      });
+    });
+  }
+  function showDrawer(next) {
+    view = view === next ? null : next; $('drawer').hidden = !view;
+    symBox.hidden = view !== 'symbols'; exBox.hidden = view !== 'examples';
+    [['btnSymbols', 'symbols', 'aria-expanded'], ['btnExamples', 'examples', 'aria-expanded'], ['tabSymbols', 'symbols', 'aria-selected'], ['tabExamples', 'examples', 'aria-selected']].forEach(function (x) { $(x[0]).setAttribute(x[2], String(view === x[1])); });
+    $('drawerBody').scrollTop = 0;
+  }
+  $('btnSymbols').onclick = function () { showDrawer('symbols'); }; $('btnExamples').onclick = function () { showDrawer('examples'); };
+  $('tabSymbols').onclick = function () { if (view !== 'symbols') showDrawer('symbols'); }; $('tabExamples').onclick = function () { if (view !== 'examples') showDrawer('examples'); };
+  $('btnCloseDrawer').onclick = function () { showDrawer(view); };
+
+  /* ---------------- panes ---------------- */
+  function tabs(names, prefix) {
+    return function (which) { names.forEach(function (n) { $(prefix + n).hidden = n !== which; $('tab' + n).setAttribute('aria-selected', String(n === which)); }); };
+  }
+  var showTop = tabs(['Python', 'Erl'], 'pane'), showBottom = tabs(['Console', 'Vars', 'Trace'], 'pane');
+  ['Python', 'Erl'].forEach(function (n) { $('tab' + n).onclick = function () { showTop(n); }; });
+  ['Console', 'Vars', 'Trace'].forEach(function (n) { $('tab' + n).onclick = function () { showBottom(n); }; });
+
+  /* ---------------- console ---------------- */
+  var con = (function () {
+    var box = $('console'), sc = $('paneConsole'), buffer = '', frame = null, total = 0, pending = null;
+    function flush() { frame = null; if (!buffer) return; box.appendChild(document.createTextNode(buffer)); buffer = ''; sc.scrollTop = sc.scrollHeight; }
+    return {
+      clear: function () { buffer = ''; total = 0; box.innerHTML = ''; }, size: function () { return total; },
+      write: function (t) { total += t.length; buffer += t; if (!frame) frame = requestAnimationFrame(flush); },
+      info: function (t) { flush(); box.appendChild(el('span', 'dim', t + '\n')); sc.scrollTop = sc.scrollHeight; },
+      error: function (title, msg, hint) { flush(); var e = el('span', 'err'); e.innerHTML = '<b>' + esc(title) + '</b> ' + esc(msg) + (hint ? '<br>' + esc(hint) : ''); box.appendChild(e); sc.scrollTop = sc.scrollHeight; },
+      ask: function () {
+        flush();
+        return new Promise(function (resolve, reject) {
+          var input = el('input'); input.setAttribute('aria-label', 'Type your answer and press Enter'); input.setAttribute('spellcheck', 'false'); input.setAttribute('autocomplete', 'off');
+          function finish(ok) { var v = input.value; pending = null; input.replaceWith(el('span', 'typed', ok ? v + '\n' : '\n')); if (ok) resolve(v); else reject(new Error('stopped')); }
+          input.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); finish(true); } });
+          pending = finish; box.appendChild(input); sc.scrollTop = sc.scrollHeight; showBottom('Console'); setTimeout(function () { input.focus(); }, 30);
+        });
+      },
+      waiting: function () { return !!pending; }, cancel: function () { if (pending) pending(false); }
+    };
+  })();
+
+  /* ---------------- variables and trace table ---------------- */
+  var trace = { vars: [], rows: [], prev: {}, prevNode: null, out: '', dirty: false };
+  function snapshot() {
+    var g = Sk.globals || {}, snap = {}, k, v;
+    for (k in g) { if (k.indexOf('__') === 0) continue; v = g[k]; if (!v || v instanceof Sk.builtin.func || v instanceof Sk.builtin.module || v.tp$name === 'function' || v.tp$name === 'type') continue; try { snap[k] = Sk.builtin.repr(v).v; } catch (e) { /* skip */ } }
+    return snap;
+  }
+  function shapeLabel(id) { if (id == null) return ''; var hit = core.find(prog, id); if (hit) return hit.node.type === 'for' ? 'for ' + hit.node.name : core.label(hit.node, exam); var f = prog.subs.filter(function (s) { return s.id === id; })[0]; return f ? f.name + '()' : ''; }
+  function record(nextId) {
+    var snap = snapshot(), changed = {}, any = false, k;
+    for (k in snap) if (snap[k] !== trace.prev[k]) { changed[k] = snap[k]; any = true; if (trace.vars.indexOf(k) < 0) trace.vars.push(k); }
+    if ((any || trace.out) && trace.rows.length < 400) trace.rows.push({ shape: shapeLabel(trace.prevNode), values: changed, out: trace.out.replace(/\n$/, '') });
+    trace.prev = snap; trace.prevNode = nextId; trace.out = '';
+    if (!trace.dirty) { trace.dirty = true; requestAnimationFrame(renderTrace); }
+  }
+  function renderTrace() {
+    trace.dirty = false;
+    var names = Object.keys(trace.prev).sort(), h = '<p>Variables in the main program, as they are right now.</p>';
+    h += names.length ? '<table><tr><th>Variable</th><th>Value</th></tr>' + names.map(function (n) { return '<tr><td>' + esc(n) + '</td><td>' + esc(trace.prev[n]) + '</td></tr>'; }).join('') + '</table>' : '<p>No variables yet. Press Run or Step.</p>';
+    $('paneVars').innerHTML = h;
+    h = '<p>A new row is added each time a value changes or something is output, just like a trace table in the exam.</p>';
+    if (trace.rows.length) {
+      h += '<table><tr><th>Shape</th>' + trace.vars.map(function (v) { return '<th>' + esc(v) + '</th>'; }).join('') + '<th>OUTPUT</th></tr>' +
+        trace.rows.map(function (r) { return '<tr><td class="shape">' + esc(r.shape) + '</td>' + trace.vars.map(function (v) { return '<td>' + (r.values[v] !== undefined ? esc(r.values[v]) : '') + '</td>'; }).join('') + '<td>' + esc(r.out) + '</td></tr>'; }).join('') + '</table>';
+      if (trace.rows.length >= 400) h += '<p>The table stops at 400 rows.</p>';
+    } else h += '<p>Nothing to show yet. Press Run or Step.</p>';
+    $('paneTrace').innerHTML = h; $('paneTrace').scrollTop = $('paneTrace').scrollHeight;
+  }
+
+  /* ---------------- running ---------------- */
+  var stopReason = null, mode = 'run', resumeStep = null, lastNode = null, LIMIT = 60000;
+  var HINTS = [[/^NameError/, /'(random|time|math)'/, 'Add  import random  (or time, or math) as the first line of the Python.'], [/^NameError/, null, 'That name has not been given a value yet. Check the spelling and capital letters, and make sure an earlier shape sets it.'],
+    [/^UnboundLocalError/, null, 'A sub program is changing a variable from the main program. Pass the value in as a parameter and return the result.'],
+    [/^TypeError/, /operand|concatenate|must be str|can only/i, 'Text and numbers are being mixed. In the Input shape choose integer or real, or wrap a number in str() before joining it to text.'],
+    [/^TypeError/, /argument|positional|takes/i, 'The call and the sub program must have the same number of values in their brackets.'],
+    [/^ValueError/, /invalid literal|could not convert/i, 'The user typed something that is not a number, and int() or float() could not convert it.'], [/^ZeroDivisionError/, null, 'Dividing by zero is impossible. Add a decision to check the value first.'],
+    [/^IndexError/, null, 'That position does not exist. Indexes start at 0, so the last item is at len - 1.'], [/^(SyntaxError|IndentationError|ParseError)/, null, 'Python cannot read what is written in this shape. Check brackets, quotes and operators.']];
+  function mark(id, cls) {
+    Array.prototype.forEach.call(document.querySelectorAll('.fc-node.active,.fc-node.error'), function (n) { n.classList.remove('active', 'error'); });
+    if (id == null) return;
+    var n = document.querySelector('.fc-node[data-id="' + id + '"]') || document.querySelector('.fc-node[data-id="sub' + id + '"]');
+    if (n) { n.classList.add(cls); var r = n.getBoundingClientRect(), c = $('canvas').getBoundingClientRect(); if (r.top < c.top + 10 || r.bottom > c.bottom - 10 || r.left < c.left || r.right > c.right) n.scrollIntoView({ block: 'center', inline: 'center' }); }
+  }
+  function setRunning(on) { running = on; $('btnRun').textContent = on && mode === 'step' ? 'Continue' : 'Run'; $('btnRun').hidden = on && mode !== 'step'; $('btnStop').hidden = !on; editor.readOnly = on; }
+
+  function start(startMode) {
+    if (running) { if (startMode === 'run' && mode === 'step') { mode = 'run'; setRunning(true); } if (resumeStep) { var go = resumeStep; resumeStep = null; go(); } return; }
+    clearTimeout(typing); fromCode(true);
+    if (!parseOk) { status($('status').textContent, true); con.clear(); con.error('Not ready to run:', 'the Python has a mistake, so there is no flowchart to follow.', $('status').textContent); return; }
+    if (!prog.main.length) { con.clear(); con.info('There is nothing to run yet. Click the + on the arrow between Start and Stop.'); return; }
+    mode = startMode; stopReason = null; lastNode = null; trace = { vars: [], rows: [], prev: {}, prevNode: null, out: '', dirty: false };
+    con.clear(); con.info('Loading Python...'); setRunning(true); renderTrace();
+    pythonReady.then(function () {
+      con.clear();
+      Sk.configure({
+        output: function (t) { if (stopReason) return; con.write(t); trace.out += t; if (con.size() > LIMIT) { stopReason = 'flood'; Sk.execLimit = 1; } },
+        read: function (p) { if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[p] === undefined) throw "File not found: '" + p + "'"; return Sk.builtinFiles.files[p]; },
+        inputfun: function (prompt) { con.write(prompt); return con.ask(); }, inputfunTakesPrompt: true, __future__: Sk.python3, yieldLimit: 100, killableWhile: true, killableFor: true
+      });
+      Sk.execLimit = Number.POSITIVE_INFINITY;
+      Sk.builtins.__at = new Sk.builtin.func(function (pyId) {
+        var id = Sk.ffi.remapToJs(pyId), delay = +$('speed').value;
+        record(id); lastNode = id;
+        if (mode === 'run' && delay === 0) return Sk.builtin.bool.true$;
+        mark(id, 'active');
+        return Sk.misceval.promiseToSuspension(new Promise(function (resolve, reject) {
+          function go() { if (stopReason) reject(new Error('stopped')); else resolve(Sk.builtin.bool.true$); }
+          if (mode === 'step') { resumeStep = go; setRunning(true); } else setTimeout(go, delay);
+        }));
+      });
+      return Sk.misceval.asyncToPromise(function () { return Sk.importMainWithBody('<stdin>', false, core.toPython(prog, true), true); }).then(function () {
+        record(null); mark(null); con.info('\nProgram finished.');
+      }, function (err) {
+        record(null);
+        if (stopReason === 'flood') { mark(null); con.error('Stopped:', 'the program printed a huge amount of output.', 'Does the loop ever end? Something inside it must change the answer to its decision.'); }
+        else if (stopReason) { mark(null); con.info('\nStopped.'); }
+        else {
+          var name = err && err.tp$name || 'Error', msg = String(err), hint = null, i;
+          try { if (err.args && err.args.v.length) msg = String(Sk.ffi.remapToJs(err.args.v[0])); } catch (e) { /* keep */ }
+          for (i = 0; i < HINTS.length && !hint; i++) if (HINTS[i][0].test(name) && (!HINTS[i][1] || HINTS[i][1].test(msg))) hint = HINTS[i][2];
+          mark(lastNode, 'error'); con.error(name + ' in the red shape:', msg, hint);
+        }
+      });
+    }, function () { con.clear(); con.error('Python could not load.', 'The Python engine is downloaded the first time you press Run, and the download failed.', 'Check the internet connection and reload, or use the offline copy of this page.'); })
+      .then(function () { resumeStep = null; setRunning(false); }, function (e) { resumeStep = null; setRunning(false); con.error('Something went wrong:', String(e)); });
+  }
+  function stop() { if (!running) return; stopReason = stopReason || 'user'; if (window.Sk) Sk.execLimit = 1; con.cancel(); if (resumeStep) { var go = resumeStep; resumeStep = null; go(); } }
+  $('btnRun').onclick = function () { start('run'); }; $('btnStep').onclick = function () { start('step'); }; $('btnStop').onclick = stop;
+  document.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); start('run'); } });
+  $('btnClearConsole').onclick = function () { if (!running) { con.clear(); con.info('Press Run, or Step to go one shape at a time.'); } };
+
+  (function () {
+    var handle = $('handle'), app = document.querySelector('.app'), drag = false;
+    handle.addEventListener('pointerdown', function (e) { drag = true; handle.classList.add('on'); handle.setPointerCapture(e.pointerId); e.preventDefault(); });
+    handle.addEventListener('pointermove', function (e) { if (drag) app.style.setProperty('--side-w', Math.max(300, Math.min(window.innerWidth * 0.6, window.innerWidth - e.clientX)) + 'px'); });
+    handle.addEventListener('pointerup', function () { drag = false; handle.classList.remove('on'); });
+  })();
+
+  /* ---------------- start up ---------------- */
+  setLabels(); setThemeLabel(); renderSymbols(); renderExamples(); showTop('Python'); showBottom('Console'); renderTrace();
+  con.info('Press Run, or Step to go one shape at a time.');
+  var saved = store(STORE); editor.value = saved != null && saved.trim() ? saved : content.START; fromCode(true);
+  if (parseOk) status('Click a shape to change it, click a + to add one, or edit the Python.');
+  document.body.classList.add('ready');
+  return { core: core, content: content, setCode: setCode, getProg: function () { return prog; } };
+}
+
+/* =====================================================================
+   4. START UP — Python (Skulpt) loads in the background, trying a second CDN if the first is blocked.
+   ===================================================================== */
+(function () {
+  var S = 'skulpt@1.2.0/dist/';
+  function fetchScript(urls) {
+    return new Promise(function (resolve, reject) {
+      var i = 0;
+      (function next() {
+        if (i >= urls.length) return reject(new Error('Could not load ' + urls[0]));
+        var s = document.createElement('script'); s.src = urls[i++]; s.onload = resolve; s.onerror = function () { s.remove(); next(); }; document.head.appendChild(s);
+      })();
+    });
+  }
+  var pythonReady = window.Sk ? Promise.resolve() : fetchScript(['https://cdn.jsdelivr.net/npm/' + S + 'skulpt.min.js', 'https://unpkg.com/' + S + 'skulpt.min.js'])
+    .then(function () { return fetchScript(['https://cdn.jsdelivr.net/npm/' + S + 'skulpt-stdlib.js', 'https://unpkg.com/' + S + 'skulpt-stdlib.js']); });
+  pythonReady.catch(function () {});
+  window.Flowcharts = FC_ui(pythonReady);
+})();
+</script>
+</body>
+</html>
