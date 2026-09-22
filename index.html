@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python Blocks and Flowcharts for OCR GCSE Computer Science</title>
+<meta name="description" content="Two free browser tools for OCR GCSE Computer Science (J277): a block editor that writes Python, and a flowchart editor that runs it.">
+<!--
+  The front door. Links to the two tools and to their offline copies.
+  Same palette, fonts and dark mode as the tools, and it shares their
+  "pb-theme" setting, so the choice follows you into a tool and back.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F7FB; --surface:#FFFFFF; --surface-2:#EAF0F8; --line:#CBD7E6;
+  --ink:#14213D; --ink-2:#44546F; --ink-3:#6B7A93;
+  --run:#FFD23F; --run-ink:#14213D; --focus:#1971C2; --accent:#1971C2;
+  --blocks:#1971C2; --charts:#C2410C;
+  --ui:"Atkinson Hyperlegible","Verdana","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code","Consolas","Menlo",monospace;
+}
+:root[data-theme="dark"]{
+  --paper:#0F1729; --surface:#17213A; --surface-2:#1E2B49; --line:#2C3B5E;
+  --ink:#E6ECF8; --ink-2:#B5C2DA; --ink-3:#8797B5;
+  --focus:#74C0FC; --accent:#74C0FC; --blocks:#74C0FC; --charts:#FFA94D;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ui);font-size:16px;line-height:1.5;color:var(--ink);background:var(--paper);min-height:100vh}
+a{color:var(--accent)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:6px}
+
+.bar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--ink);color:#fff;flex-wrap:wrap}
+:root[data-theme="dark"] .bar{background:#0A1122;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand strong{font-size:19px;letter-spacing:-.01em}
+.brand span{font-size:13px;color:#B9C6DC}
+.bar .spacer{flex:1}
+.nb{border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;padding:6px 13px;border-radius:8px;font-weight:700;font-size:14px}
+.nb:hover{background:rgba(255,255,255,.12)}
+
+.wrap{max-width:1020px;margin:0 auto;padding:40px 16px 64px}
+.lede{max-width:64ch;margin-bottom:34px}
+.lede h1{font-size:clamp(26px,4.4vw,36px);line-height:1.22;letter-spacing:-.02em;margin-bottom:12px}
+.lede p{color:var(--ink-2)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;border-top:5px solid var(--tint)}
+.card h2{font-size:21px;letter-spacing:-.01em;margin-bottom:4px}
+.card .sub{color:var(--ink-3);font-size:14px;margin-bottom:14px}
+.card ul{list-style:none;margin-bottom:22px;flex:1}
+.card li{padding-left:22px;position:relative;margin-bottom:7px;color:var(--ink-2);font-size:15px}
+.card li::before{content:"";position:absolute;left:4px;top:.62em;width:7px;height:7px;border-radius:2px;background:var(--tint)}
+.card code{font-family:var(--mono);font-size:.92em;background:var(--surface-2);padding:1px 5px;border-radius:4px;color:var(--ink)}
+.go{display:inline-block;background:var(--run);color:var(--run-ink);border:1px solid var(--run);border-radius:9px;padding:11px 20px;font-weight:700;text-decoration:none;text-align:center}
+.go:hover{filter:brightness(1.05)}
+.dl{display:block;margin-top:12px;font-size:14px;color:var(--ink-3);text-decoration:none}
+.dl b{color:var(--accent);text-decoration:underline}
+
+.note{margin-top:34px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+.note h3{font-size:16px;margin-bottom:8px}
+.note p{color:var(--ink-2);font-size:15px;max-width:72ch}
+.note p + p{margin-top:9px}
+
+footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);color:var(--ink-3);font-size:14px;display:flex;gap:14px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="brand"><strong>Computing Hub</strong><span>OCR GCSE Computer Science J277</span></div>
+  <span class="spacer"></span>
+  <button class="nb" id="btnTheme" type="button">Dark mode</button>
+</header>
+
+<div class="wrap">
+  <div class="lede">
+    <h1>Write Python in blocks. Draw it as a flowchart. Watch it run.</h1>
+    <p>Two tools for OCR GCSE Computer Science. Both run entirely in the browser, with nothing to install and no account to make: the Python is really executed, one step at a time if you want.</p>
+  </div>
+
+  <div class="cards">
+    <section class="card" style="--tint:var(--blocks)">
+      <h2>Python Blocks</h2>
+      <p class="sub">Drag blocks together, get real Python</p>
+      <ul>
+        <li>Every block is a piece of J277 Python: selection, iteration, arrays, sub programs, file handling</li>
+        <li>The Python appears as you build, and runs for real</li>
+        <li>Built-in help explains each idea next to the OCR reference language</li>
+        <li>Reading and writing text files works, without touching the real computer</li>
+      </ul>
+      <a class="go" href="python-blocks-ocr.html">Open Python Blocks</a>
+      <a class="dl" href="python-blocks-ocr-offline.html" download>No internet in the classroom? <b>Download the offline copy</b> (1.8 MB)</a>
+    </section>
+
+    <section class="card" style="--tint:var(--charts)">
+      <h2>Flowcharts</h2>
+      <p class="sub">Python and flowchart, kept in step</p>
+      <ul>
+        <li>Draw a flowchart and get Python, or type Python and get the flowchart</li>
+        <li>Step through one shape at a time, watching the variables change</li>
+        <li>Builds a trace table as it goes, like the ones in the exam</li>
+        <li>Shapes can be labelled in exam reference language, and saved as a picture</li>
+      </ul>
+      <a class="go" href="flowcharts-ocr.html">Open Flowcharts</a>
+      <a class="dl" href="flowcharts-ocr-offline.html" download>No internet in the classroom? <b>Download the offline copy</b> (1.0 MB)</a>
+    </section>
+  </div>
+
+  <div class="note">
+    <h3>About the offline copies</h3>
+    <p>The ordinary pages fetch Blockly and Python from the internet the first time they are used. The offline copies have both built in, so they work with the network switched off: save one to a memory stick or a shared drive, open it in any browser, and everything still runs.</p>
+    <p>Work is saved in the browser it was made in, so it stays on that computer. Use <b>Copy code</b> or <b>Save picture</b> to take work somewhere else.</p>
+  </div>
+
+  <footer>
+    <span>Free to use and to share.</span>
+    <a href="https://github.com/Computing-Hub/pythonblocks">Source on GitHub</a>
+  </footer>
+</div>
+
+<script>
+/* The tools remember the theme under "pb-theme"; use the same key so the choice carries across. */
+(function () {
+  function store(key, value) { try { if (value === undefined) return localStorage.getItem(key); localStorage.setItem(key, value); } catch (e) { return null; } }
+  var theme = store('pb-theme') === 'dark' ? 'dark' : 'light', btn = document.getElementById('btnTheme');
+  function apply() { document.documentElement.setAttribute('data-theme', theme); btn.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode'; }
+  btn.onclick = function () { theme = theme === 'dark' ? 'light' : 'dark'; store('pb-theme', theme); apply(); };
+  apply();
+})();
+</script>
+</body>
+</html>
