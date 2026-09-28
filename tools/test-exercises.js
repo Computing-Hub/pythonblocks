@@ -5,6 +5,7 @@
   cannot be passed. Every worked solution is really run under Skulpt
   against its own tests, and a program that does nothing useful is run
   against them too, to catch tests so loose that anything passes.
+  The solutions live in tools/solutions.js, not in the page.
 
   Needs vendor/:  python3 tools/build-offline.py extract
 */
@@ -62,6 +63,7 @@ const page = load(PAGE);
 const Sk = skulpt();
 const core = page.EX_core(Sk);
 const SETS = page.EX_content().SETS;
+const SOLUTIONS = require('./solutions.js');
 
 console.log('\nhow the sets are put together');
 const seen = {};
@@ -76,7 +78,9 @@ SETS.forEach(function (set) {
     set.items.forEach(function (ex) {
       assert(!seen[ex.id], ex.id + ' is used twice');
       seen[ex.id] = true;
-      ['title', 'brief', 'hint', 'solution'].forEach(function (k) { assert(ex[k], ex.id + ' is missing ' + k); });
+      ['title', 'brief', 'hint'].forEach(function (k) { assert(ex[k], ex.id + ' is missing ' + k); });
+      assert(SOLUTIONS[ex.id], ex.id + ' has no worked solution in tools/solutions.js');
+      assert(!('solution' in ex), ex.id + ' has its solution in the page, where students can read it; move it to tools/solutions.js');
       assert(ex.steps && ex.steps.length, ex.id + ' has no steps');
       assert(ex.tests && ex.tests.length, ex.id + ' has no tests');
       ex.tests.forEach(function (t, n) {
@@ -96,9 +100,13 @@ const LAZY = 'print("nothing to see here")\n';
 
 (async function () {
   console.log('\nevery worked solution passes its own tests');
+  check('every solution belongs to an exercise', function () {
+    const stray = Object.keys(SOLUTIONS).filter(function (id) { return !seen[id]; });
+    assert(!stray.length, 'tools/solutions.js has solutions for exercises that do not exist: ' + stray.join(', '));
+  });
   for (const set of SETS) {
     for (const ex of set.items) {
-      const good = await core.check(ex.solution, ex);
+      const good = await core.check(SOLUTIONS[ex.id], ex);
       if (!good.ok) { fail(ex.id + '  ' + ex.title, 'the worked solution does not pass: ' + good.why); continue; }
       const lazy = await core.check(LAZY, ex);
       if (lazy.ok) { fail(ex.id + '  ' + ex.title, 'a program that does nothing still passes, so the tests are too loose'); continue; }

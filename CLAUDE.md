@@ -15,6 +15,7 @@ Three self-contained teaching tools for OCR GCSE Computer Science (J277), each a
 | `exercises.html` | **Exercises** — 50 auto-marked tasks in 10 sets, each set earning a badge | fetched from CDN at runtime |
 | `exercises-offline.html` | same app | Skulpt 1.2.0 inlined |
 | `index.html` | landing page linking all three (not part of an offline pair) | — |
+| `terms.html` | copyright and terms of use (not part of an offline pair) | — |
 
 Python is executed for real by **Skulpt** in the browser; nothing runs on a server.
 
@@ -37,7 +38,7 @@ python3 tools/build-offline.py check       # are the offline pages in sync? (exi
 
 Run all of these before finishing any change. The flowchart CORE never touches the DOM, so the test lifts it out of the HTML with `vm` and exercises it — no source changes, no dependencies. It covers every bundled example (parse → Python → re-parse must not drift, every shape reachable in both the SVG and the `__at()` hooks), the parse errors students trigger, and the ERL translation. **Python Blocks has no equivalent**: its core needs Blockly and a DOM, so changes there still need checking in the browser.
 
-`test-exercises.js` is the important one for the exercises: it runs **every worked solution against its own tests** under Skulpt, and also runs a do-nothing program against them, so a task that cannot be passed — or one whose tests are so loose anything passes — fails the build. It also renders the page against a stub document, which catches a render or badge-drawing crash.
+`test-exercises.js` is the important one for the exercises: it runs **every worked solution against its own tests** under Skulpt (the solutions live in `tools/solutions.js`, never in the page), and also runs a do-nothing program against them, so a task that cannot be passed — or one whose tests are so loose anything passes — fails the build. It also renders the page against a stub document, which catches a render or badge-drawing crash.
 
 Anything the tests don't reach is manual: load the page, open **Examples**, run each one, and check the generated Python panel.
 
@@ -77,7 +78,7 @@ Each app script is a small number of top-level factory functions, separated by b
 **Exercises** — `EX_core(Sk)` → `EX_content()` → `EX_badges()` → `EX_ui(pythonReady)` → START UP.
 
 - **CORE** is the marker, and takes `Sk` as an argument rather than reading `window.Sk`, so the tests can drive it. It compares **only what the program printed** — prompts never reach the output buffer — with spacing collapsed and capitals ignored, and each `want` must appear *in order*. `must`/`forbid` rules additionally check the source (does it really use a `while` loop?), matched against a copy with strings and comments blanked out; a rule marked `raw: true` opts out of that, for when the thing being asked for *is* a string, like `open(f, "w")`.
-- **CONTENT** holds the ten sets. An exercise carries its own `tests` and one `solution`; difficulty is the position in the set, not a field. `tests` may supply `in` (typed answers), `files`/`wantFiles` (the virtual filesystem) and `runs` (repeat a test).
+- **CONTENT** holds the ten sets. An exercise carries its own `tests`; difficulty is the position in the set, not a field. Its worked solution is **not** in the page — it is in `tools/solutions.js`, keyed by exercise id, so students cannot read answers with View Source. The deploy publishes `*.html` only, so that file never goes online, and the test fails if a `solution` field reappears in the page. After two failed checks a student is pointed to the hint and their teacher; there is no "show me" button. `tests` may supply `in` (typed answers), `files`/`wantFiles` (the virtual filesystem) and `runs` (repeat a test).
 - **BADGES** draws the PNG on a canvas and derives its check-code from name + set + date with FNV-1a. The teacher panel recomputes that code so an edited badge picture stops matching. It is a receipt, not proof of authorship, and the panel says so.
 - `EX_core`'s `VFS()` is a **copy** of `PB_VFS` from `python-blocks-ocr.html` — single-file pages cannot share code. `test-exercises.js` asserts the two are identical (ignoring JS indentation), so they cannot drift.
 
@@ -97,11 +98,12 @@ Each app script is a small number of top-level factory functions, separated by b
 - **Skulpt setup** is duplicated per app: `__future__: Sk.python3`, `yieldLimit: 100`, `killableWhile/For: true`, `inputfun` returning a console promise. **Stop works by setting `Sk.execLimit = 1`**, so every run must reset `Sk.execLimit` and `Sk.execStart`. Output above ~60 000 characters trips a flood guard that stops the program.
 - **Theming** is CSS custom properties on `:root`, overridden under `:root[data-theme="dark"]`. Flowchart SVG colours are *not* CSS — they come from the `PALETTES` object in `FC_ui` and must be updated alongside the CSS when colours change.
 - Blockly block styles come from `COL` (one colour per concept); empty value sockets render as the `BLANK` marker `___`, and Run refuses to start while any remain.
+- **Copyright.** The work is © Jose Galan, all rights reserved (`LICENSE`, `terms.html`). Every page carries `<meta name="author">`, each app script opens with the copyright comment, and each app's top bar has a `© 2026 Jose Galan` link to `terms.html`. Keep these on any new page.
 - User-facing copy is British English, second person, and aimed at 14–16-year-olds. Match it.
 
 ## Adding content
 
 - **A Python Blocks example or help topic**: copy an entry in `PB_content` and rewrite it with the `D` builder. Don't hand-write the Python for the help panel — it is generated from the same blocks.
 - **A new block**: add to `DEFS`, add a generator in `defineGenerators`, add it to `TOOLBOX`, and usually add a `D` helper so examples can use it.
-- **An exercise**: copy an entry in `EX_content`, keeping five per set and the easiest first. Write the `solution` and run `node tools/test-exercises.js` — it will tell you if the solution fails, or if the tests are so loose that a do-nothing program passes. Give at least two tests with different inputs, and prefer `{ re: '\\b15\\b' }` over the bare string `'15'` for numbers, so `150` cannot match by accident.
+- **An exercise**: copy an entry in `EX_content`, keeping five per set and the easiest first. Add its worked solution to `tools/solutions.js` under the same id, and run `node tools/test-exercises.js` — it will tell you if the solution fails, or if the tests are so loose that a do-nothing program passes. Give at least two tests with different inputs, and prefer `{ re: '\\b15\\b' }` over the bare string `'15'` for numbers, so `150` cannot match by accident.
 - **A flowchart example**: entries in `FC_content` are plain Python strings, and they must parse under the deliberately narrow subset — spaces not tabs, `import` lines at the top, sub programs at the left margin, `return` only as the last line of a function, and `for x in range(...)` as the only loop form. Anything outside that must produce a helpful `ParseError`, not a crash.

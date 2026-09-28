@@ -1,0 +1,14 @@
+Copyright (c) 2026 Jose Galan. All rights reserved.
+
+Python Blocks, Flowcharts and Exercises for OCR GCSE Computer Science,
+including their source code, design, exercises and help text, are the
+work of Jose Galan.
+
+No licence is granted to copy, modify, distribute, republish or sell this
+software or any part of it, except with the author's written permission.
+
+The published tools may be used free of charge for learning and teaching,
+on the terms set out in terms.html.
+
+The third-party libraries inlined in the *-offline.html pages (Blockly and
+Skulpt) remain under their own licences.

@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Flowcharts for OCR GCSE Computer Science</title>
+<meta name="author" content="Jose Galan">
 <!--
   Flowcharts (OCR J277 edition). One self-contained page: no build step, no server.
   Draw a flowchart and get Python, or type Python and get the flowchart. The Python is run for real
@@ -46,6 +47,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .brand{display:flex;align-items:baseline;gap:10px;margin-right:6px}
 .brand strong{font-size:19px;letter-spacing:-.01em}
 .brand span{font-size:13px;color:#B9C6DC}
+.brand .by{font-size:12px;color:#8FA0BC;text-decoration:none}
+.brand .by:hover{color:#fff;text-decoration:underline}
 .bar .spacer{flex:1}
 .nb{border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;padding:6px 13px;border-radius:8px;font-weight:700;font-size:14px}
 .nb:hover{background:rgba(255,255,255,.12)}
@@ -214,7 +217,7 @@ select.nb option{color:#14213D}
 </head>
 <body>
 <header class="bar">
-  <div class="brand"><strong>Flowcharts</strong><span>OCR GCSE Computer Science J277</span></div>
+  <div class="brand"><strong>Flowcharts</strong><span>OCR GCSE Computer Science J277</span><a class="by" href="terms.html" title="Terms of use">&copy; 2026 Jose Galan</a></div>
   <button class="nb" id="btnSymbols" type="button" aria-expanded="false" aria-controls="drawer">Symbols</button>
   <button class="nb" id="btnExamples" type="button" aria-expanded="false" aria-controls="drawer">Examples</button>
   <span class="spacer"></span>
@@ -276,6 +279,9 @@ select.nb option{color:#14213D}
 </main>
 
 <script>
+/* (c) 2026 Jose Galan. All rights reserved.
+   Free to use in class; not to be copied, altered or republished without
+   permission. See terms.html. */
 /* =====================================================================
    1. CORE — the program model, Python <-> model, OCR reference language,
    and the automatic flowchart layout. Works in the browser and in Node.

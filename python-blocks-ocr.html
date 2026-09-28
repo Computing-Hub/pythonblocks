@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Python Blocks for OCR GCSE Computer Science</title>
+<meta name="author" content="Jose Galan">
 <!--
   Python Blocks (OCR J277 edition). One self-contained page: no build step, no server.
   Blocks are built with Blockly; the Python they produce is run for real in the browser by Skulpt.
@@ -46,6 +47,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .brand{display:flex;align-items:baseline;gap:10px;margin-right:6px}
 .brand strong{font-size:19px;letter-spacing:-.01em}
 .brand span{font-size:13px;color:#B9C6DC}
+.brand .by{font-size:12px;color:#8FA0BC;text-decoration:none}
+.brand .by:hover{color:#fff;text-decoration:underline}
 .bar .spacer{flex:1}
 .nb{border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;padding:6px 13px;border-radius:8px;font-weight:700;font-size:14px}
 .nb:hover{background:rgba(255,255,255,.12)}
@@ -175,7 +178,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 </head>
 <body>
 <header class="bar">
-  <div class="brand"><strong>Python Blocks</strong><span>OCR GCSE Computer Science J277</span></div>
+  <div class="brand"><strong>Python Blocks</strong><span>OCR GCSE Computer Science J277</span><a class="by" href="terms.html" title="Terms of use">&copy; 2026 Jose Galan</a></div>
   <button class="nb" id="btnHelp" type="button" aria-expanded="false" aria-controls="drawer">Help</button>
   <button class="nb" id="btnExamples" type="button" aria-expanded="false" aria-controls="drawer">Examples</button>
   <span class="spacer"></span>
@@ -229,6 +232,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div class="toast" id="toast" role="status" hidden></div>
 
 <script>
+/* (c) 2026 Jose Galan. All rights reserved.
+   Free to use in class; not to be copied, altered or republished without
+   permission. See terms.html. */
 /* =====================================================================
    1. CORE — blocks, Python generators, toolbox, program builder
    Works in the browser and in Node (for testing).
