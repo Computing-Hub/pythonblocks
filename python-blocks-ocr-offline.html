@@ -48,6 +48,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .brand strong{font-size:19px;letter-spacing:-.01em}
 .brand span{font-size:13px;color:#B9C6DC}
 .brand .by{font-size:12px;color:#8FA0BC;text-decoration:none}
+.brand{display:grid;grid-template-columns:repeat(3,auto);column-gap:10px}
+.brand .school{grid-column:1/-1;font-size:11px;letter-spacing:.02em;line-height:1.2}
 .brand .by:hover{color:#fff;text-decoration:underline}
 .bar .spacer{flex:1}
 .nb{border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;padding:6px 13px;border-radius:8px;font-weight:700;font-size:14px}
@@ -178,7 +180,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 </head>
 <body>
 <header class="bar">
-  <div class="brand"><strong>Python Blocks</strong><span>OCR GCSE Computer Science J277</span><a class="by" href="terms.html" title="Terms of use">&copy; 2026 Jose Galan</a></div>
+  <div class="brand"><span class="school">Le Rocquier School - Dept. of Computer Science</span><strong>Python Blocks</strong><span>OCR GCSE Computer Science J277</span><a class="by" href="terms.html" title="Terms of use">&copy; 2026 Jose Galan</a></div>
   <button class="nb" id="btnHelp" type="button" aria-expanded="false" aria-controls="drawer">Help</button>
   <button class="nb" id="btnExamples" type="button" aria-expanded="false" aria-controls="drawer">Examples</button>
   <span class="spacer"></span>
